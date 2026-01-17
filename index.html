@@ -94,6 +94,11 @@
             border-color: #10b981;
         }
 
+        button.transport.loop-active {
+            background-color: #7c3aed;
+            border-color: #8b5cf6;
+        }
+
         /* Main content area */
         .main-content {
             flex: 1;
@@ -149,32 +154,46 @@
             color: #666;
         }
 
+        .spectrogram-fft {
+            position: absolute;
+            bottom: 4px;
+            right: 8px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .spectrogram-fft-label {
+            font-size: 9px;
+            color: #666;
+        }
+
         /* Meters panel */
         .meters-panel {
             width: 140px;
             background-color: #222;
             border-left: 1px solid #3a3a3a;
-            padding: 8px;
+            padding: 6px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 6px;
         }
 
         .meter {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 2px;
         }
 
         .meter-label {
-            font-size: 10px;
+            font-size: 9px;
             color: #888;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
         }
 
         .meter-value {
-            font-size: 18px;
+            font-size: 14px;
             font-family: monospace;
             font-weight: 600;
             color: #4ade80;
@@ -189,22 +208,235 @@
         }
 
         .meter-bar-container {
-            height: 6px;
+            height: 4px;
             background-color: #1a1a1a;
-            border-radius: 3px;
+            border-radius: 2px;
             overflow: hidden;
         }
 
         .meter-bar {
             height: 100%;
             background: linear-gradient(to right, #4ade80, #fbbf24, #ef4444);
-            border-radius: 3px;
+            border-radius: 2px;
             transition: width 0.05s;
         }
 
         .meter-unit {
-            font-size: 9px;
+            font-size: 8px;
             color: #666;
+        }
+
+        /* File stats (non-realtime) */
+        .file-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 0;
+            font-size: 10px;
+        }
+
+        .file-stat-label {
+            color: #888;
+            font-size: 9px;
+        }
+
+        .file-stat-value {
+            color: #e0e0e0;
+            font-family: monospace;
+            font-size: 10px;
+        }
+
+        .stats-divider {
+            height: 1px;
+            background-color: #3a3a3a;
+            margin: 4px 0;
+        }
+
+        /* Volume control */
+        .volume-control {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 4px 0;
+        }
+
+        .volume-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .volume-label {
+            font-size: 9px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .volume-value {
+            font-size: 10px;
+            color: #e0e0e0;
+            font-family: monospace;
+        }
+
+        .volume-slider {
+            width: 100%;
+            height: 20px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .volume-slider::-webkit-slider-track {
+            width: 100%;
+            height: 4px;
+            background: #1a1a1a;
+            border-radius: 2px;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #2563eb;
+            border-radius: 50%;
+            cursor: pointer;
+            margin-top: -4px;
+        }
+
+        .volume-slider::-webkit-slider-thumb:hover {
+            background: #3b82f6;
+        }
+
+        .volume-slider::-moz-range-track {
+            width: 100%;
+            height: 4px;
+            background: #1a1a1a;
+            border-radius: 2px;
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            background: #2563eb;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .volume-slider::-moz-range-thumb:hover {
+            background: #3b82f6;
+        }
+
+        /* Right sidebar */
+        .right-sidebar {
+            width: 140px;
+            background-color: #222;
+            border-left: 1px solid #3a3a3a;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* File list panel */
+        .file-list-panel {
+            flex: 1;
+            border-top: 1px solid #3a3a3a;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .file-list-header {
+            padding: 6px 8px;
+            font-size: 10px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #3a3a3a;
+        }
+
+        .file-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 4px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 6px;
+            margin-bottom: 2px;
+            background-color: #2a2a2a;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+
+        .file-item:hover {
+            background-color: #3a3a3a;
+        }
+
+        .file-item.active {
+            background-color: #2563eb;
+        }
+
+        .file-name {
+            flex: 1;
+            font-size: 11px;
+            color: #e0e0e0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-delete {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            padding: 0;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            line-height: 1;
+            transition: color 0.15s;
+        }
+
+        .file-delete:hover {
+            color: #ef4444;
+        }
+
+        /* Drag and drop overlay */
+        .drag-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(37, 99, 235, 0.2);
+            border: 3px dashed #2563eb;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .drag-overlay.visible {
+            display: flex;
+        }
+
+        .drag-overlay-text {
+            font-size: 24px;
+            color: #2563eb;
+            font-weight: 600;
         }
 
         /* FFT size selector */
@@ -327,7 +559,7 @@
     </style>
 </head>
 <body>
-    <input type="file" id="fileInput" accept=".wav,.aif,.aiff">
+    <input type="file" id="fileInput" accept=".wav,.aif,.aiff" multiple>
 
     <!-- Toolbar -->
     <div class="toolbar">
@@ -341,13 +573,13 @@
             <button id="playBtn" class="transport" disabled title="Play (Space)">&#9654;</button>
             <button id="pauseBtn" class="transport" disabled title="Pause (Space)">&#10074;&#10074;</button>
             <button id="stopBtn" class="transport" disabled title="Stop">&#9632;</button>
+            <button id="loopBtn" class="transport" disabled title="Loop Selection (L)">&#8635;</button>
         </div>
         <div class="toolbar-group">
             <span class="toolbar-label">Zoom</span>
             <button id="zoomInBtn" disabled title="Zoom In (+)">+</button>
             <button id="zoomOutBtn" disabled title="Zoom Out (-)">-</button>
             <button id="zoomFitBtn" disabled title="Fit to Window">Fit</button>
-            <span class="shortcuts-hint">Shift+Scroll to zoom</span>
         </div>
         <div class="toolbar-group">
             <span class="toolbar-label">Edit</span>
@@ -358,17 +590,7 @@
             <button id="fadeInBtn" disabled title="Fade In">Fade In</button>
             <button id="fadeOutBtn" disabled title="Fade Out">Fade Out</button>
             <button id="gainBtn" disabled title="Apply Gain">Gain</button>
-        </div>
-        <div class="toolbar-group">
-            <span class="toolbar-label">FFT</span>
-            <select id="fftSize" class="fft-select">
-                <option value="256">256</option>
-                <option value="512">512</option>
-                <option value="1024">1024</option>
-                <option value="2048" selected>2048</option>
-                <option value="4096">4096</option>
-                <option value="8192">8192</option>
-            </select>
+            <button id="reverseBtn" disabled title="Reverse">Reverse</button>
         </div>
     </div>
 
@@ -380,39 +602,74 @@
             <div class="waveform-container">
                 <canvas id="waveformCanvas"></canvas>
                 <div class="selection-info" id="selectionInfo"></div>
+                <div class="drag-overlay" id="dragOverlay">
+                    <div class="drag-overlay-text">Drop audio files here</div>
+                </div>
             </div>
             <!-- Spectrogram -->
             <div class="spectrogram-container">
                 <canvas id="spectrogramCanvas"></canvas>
                 <span class="spectrogram-label">Spectrum</span>
+                <div class="spectrogram-fft">
+                    <span class="spectrogram-fft-label">FFT:</span>
+                    <select id="fftSize" class="fft-select">
+                        <option value="256">256</option>
+                        <option value="512">512</option>
+                        <option value="1024">1024</option>
+                        <option value="2048" selected>2048</option>
+                        <option value="4096">4096</option>
+                        <option value="8192">8192</option>
+                    </select>
+                </div>
             </div>
         </div>
 
-        <!-- Meters panel -->
-        <div class="meters-panel">
-            <div class="meter">
-                <span class="meter-label">Peak</span>
-                <span class="meter-value" id="peakValue">-∞</span>
-                <span class="meter-unit">dBFS</span>
-                <div class="meter-bar-container">
-                    <div class="meter-bar" id="peakBar" style="width: 0%"></div>
+        <!-- Right sidebar -->
+        <div class="right-sidebar">
+            <!-- Meters panel -->
+            <div class="meters-panel">
+                <!-- Real-time Peak Meter -->
+                <div class="meter">
+                    <span class="meter-label">Peak (RT)</span>
+                    <span class="meter-value" id="peakValue">-∞</span>
+                    <span class="meter-unit">dBFS</span>
+                    <div class="meter-bar-container">
+                        <div class="meter-bar" id="peakBar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="stats-divider"></div>
+
+                <!-- Volume Control -->
+                <div class="volume-control">
+                    <div class="volume-header">
+                        <span class="volume-label">Output Volume</span>
+                        <span class="volume-value" id="volumeValue">0 dB</span>
+                    </div>
+                    <input type="range" id="volumeSlider" class="volume-slider" min="-60" max="6" step="0.5" value="0">
+                </div>
+
+                <div class="stats-divider"></div>
+
+                <!-- File Statistics -->
+                <div class="file-stat">
+                    <span class="file-stat-label">RMS Peak:</span>
+                    <span class="file-stat-value" id="rmsPeakValue">-</span>
+                </div>
+                <div class="file-stat">
+                    <span class="file-stat-label">True Peak:</span>
+                    <span class="file-stat-value" id="truePeakValue">-</span>
+                </div>
+                <div class="file-stat">
+                    <span class="file-stat-label">LUFS:</span>
+                    <span class="file-stat-value" id="lufsValue">-</span>
                 </div>
             </div>
-            <div class="meter">
-                <span class="meter-label">RMS</span>
-                <span class="meter-value" id="rmsValue">-∞</span>
-                <span class="meter-unit">dBFS</span>
-                <div class="meter-bar-container">
-                    <div class="meter-bar" id="rmsBar" style="width: 0%"></div>
-                </div>
-            </div>
-            <div class="meter">
-                <span class="meter-label">LUFS</span>
-                <span class="meter-value" id="lufsValue">-∞</span>
-                <span class="meter-unit">Short-term</span>
-                <div class="meter-bar-container">
-                    <div class="meter-bar" id="lufsBar" style="width: 0%"></div>
-                </div>
+
+            <!-- File list panel -->
+            <div class="file-list-panel">
+                <div class="file-list-header">Files</div>
+                <div class="file-list" id="fileList"></div>
             </div>
         </div>
     </div>
@@ -490,6 +747,7 @@
                 this.audioBuffer = null;
                 this.sourceNode = null;
                 this.analyserNode = null;
+                this.gainNode = null;
                 this.isPlaying = false;
                 this.isPaused = false;
                 this.startTime = 0;
@@ -498,6 +756,9 @@
                 this.onPositionUpdate = null;
                 this.animationFrame = null;
                 this.fftSize = 2048;
+                this.looping = false;
+                this.loopStart = 0;
+                this.loopEnd = 0;
             }
 
             async init() {
@@ -507,12 +768,31 @@
                 if (this.audioContext.state === 'suspended') {
                     await this.audioContext.resume();
                 }
+                if (!this.gainNode) {
+                    this.gainNode = this.audioContext.createGain();
+                    this.gainNode.gain.value = 1.0; // 0 dB default
+                }
                 if (!this.analyserNode) {
                     this.analyserNode = this.audioContext.createAnalyser();
                     this.analyserNode.fftSize = this.fftSize;
                     this.analyserNode.smoothingTimeConstant = 0.8;
+                    // Chain: source -> gainNode -> analyserNode -> destination
+                    this.gainNode.connect(this.analyserNode);
                     this.analyserNode.connect(this.audioContext.destination);
                 }
+            }
+
+            setVolume(db) {
+                if (!this.gainNode) return;
+                // Convert dB to linear gain
+                const gain = Math.pow(10, db / 20);
+                this.gainNode.gain.value = gain;
+            }
+
+            getVolume() {
+                if (!this.gainNode) return 0;
+                // Convert linear gain to dB
+                return 20 * Math.log10(this.gainNode.gain.value);
             }
 
             setFFTSize(size) {
@@ -539,7 +819,7 @@
                 this.stopPlayback();
                 this.sourceNode = this.audioContext.createBufferSource();
                 this.sourceNode.buffer = this.audioBuffer;
-                this.sourceNode.connect(this.analyserNode);
+                this.sourceNode.connect(this.gainNode);
 
                 this.sourceNode.onended = () => {
                     if (this.isPlaying && !this.isPaused) {
@@ -562,12 +842,21 @@
                 this.stopPlayback();
                 this.sourceNode = this.audioContext.createBufferSource();
                 this.sourceNode.buffer = this.audioBuffer;
-                this.sourceNode.connect(this.analyserNode);
+                this.sourceNode.connect(this.gainNode);
+
+                // Store loop points
+                this.loopStart = startTime;
+                this.loopEnd = endTime;
 
                 this.sourceNode.onended = () => {
                     if (this.isPlaying && !this.isPaused) {
-                        this.stop();
-                        if (this.onPlaybackEnd) this.onPlaybackEnd();
+                        if (this.looping && this.loopEnd > this.loopStart) {
+                            // Loop: restart from beginning of selection
+                            this.playSelection(this.loopStart, this.loopEnd);
+                        } else {
+                            this.stop();
+                            if (this.onPlaybackEnd) this.onPlaybackEnd();
+                        }
                     }
                 };
 
@@ -578,6 +867,14 @@
                 this.isPaused = false;
 
                 this.updatePosition();
+            }
+
+            setLooping(enabled) {
+                this.looping = enabled;
+            }
+
+            isLooping() {
+                return this.looping;
             }
 
             resume() {
@@ -949,6 +1246,26 @@
                     ctx.fillRect(i, y1, 1, Math.max(1, y2 - y1));
                 }
 
+                // Draw file end indicator
+                const fileEndX = this.sampleToPixel(this.audioBuffer.length);
+                if (fileEndX >= 0 && fileEndX <= width) {
+                    // Draw dashed vertical line at file end
+                    ctx.strokeStyle = '#f59e0b';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(fileEndX, 0);
+                    ctx.lineTo(fileEndX, height);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                // Shade area beyond file end
+                if (fileEndX < width && fileEndX >= 0) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                    ctx.fillRect(fileEndX, 0, width - fileEndX, height);
+                }
+
                 // Draw playhead
                 const playheadX = this.sampleToPixel(this.playheadPosition);
                 if (playheadX >= 0 && playheadX <= width) {
@@ -1095,7 +1412,7 @@
                 const gradient = ctx.createLinearGradient(0, height, 0, 0);
                 gradient.addColorStop(0, 'rgba(59, 130, 246, 0.1)');
                 gradient.addColorStop(0.5, 'rgba(59, 130, 246, 0.4)');
-                gradient.addColorStop(1, 'rgba(147, 51, 234, 0.8)');
+                gradient.addColorStop(1, 'rgba(59, 130, 246, 0.8)');
 
                 // Draw smooth filled curve
                 ctx.beginPath();
@@ -1141,12 +1458,12 @@
                         ctx.quadraticCurveTo(prevX, height - prevHeight, cpX, height - (prevHeight + barHeight) / 2);
                     }
                 }
-                ctx.strokeStyle = 'rgba(147, 51, 234, 0.9)';
+                ctx.strokeStyle = 'rgba(59, 130, 246, 0.9)';
                 ctx.lineWidth = 2;
                 ctx.stroke();
 
                 // Draw glow effect
-                ctx.shadowColor = '#8b5cf6';
+                ctx.shadowColor = '#3b82f6';
                 ctx.shadowBlur = 10;
                 ctx.stroke();
                 ctx.shadowBlur = 0;
@@ -1229,8 +1546,8 @@
                 const gradient = ctx.createLinearGradient(0, height, 0, 0);
                 gradient.addColorStop(0, 'rgba(59, 130, 246, 0.05)');
                 gradient.addColorStop(0.3, 'rgba(59, 130, 246, 0.3)');
-                gradient.addColorStop(0.7, 'rgba(99, 102, 241, 0.5)');
-                gradient.addColorStop(1, 'rgba(147, 51, 234, 0.7)');
+                gradient.addColorStop(0.7, 'rgba(59, 130, 246, 0.5)');
+                gradient.addColorStop(1, 'rgba(59, 130, 246, 0.7)');
 
                 // Draw smooth filled curve
                 ctx.beginPath();
@@ -1275,8 +1592,8 @@
                 // Gradient stroke
                 const strokeGradient = ctx.createLinearGradient(0, height, 0, 0);
                 strokeGradient.addColorStop(0, '#3b82f6');
-                strokeGradient.addColorStop(0.5, '#6366f1');
-                strokeGradient.addColorStop(1, '#8b5cf6');
+                strokeGradient.addColorStop(0.5, '#3b82f6');
+                strokeGradient.addColorStop(1, '#3b82f6');
 
                 ctx.strokeStyle = strokeGradient;
                 ctx.lineWidth = 2;
@@ -1372,22 +1689,26 @@
         // ==================== Metering ====================
         class Metering {
             constructor() {
+                // Real-time peak meter
                 this.peakValue = document.getElementById('peakValue');
-                this.rmsValue = document.getElementById('rmsValue');
-                this.lufsValue = document.getElementById('lufsValue');
                 this.peakBar = document.getElementById('peakBar');
-                this.rmsBar = document.getElementById('rmsBar');
-                this.lufsBar = document.getElementById('lufsBar');
+
+                // File statistics (non-realtime)
+                this.rmsPeakValue = document.getElementById('rmsPeakValue');
+                this.truePeakValue = document.getElementById('truePeakValue');
+                this.lufsValue = document.getElementById('lufsValue');
 
                 this.analyserNode = null;
                 this.audioBuffer = null;
                 this.isRealtime = false;
                 this.animationFrame = null;
 
-                // LUFS integration buffer (short-term = 3 seconds)
-                this.lufsBuffer = [];
-                this.lufsWindowSize = 3000; // ms
-                this.lastLufsTime = 0;
+                // File-wide statistics
+                this.fileStats = {
+                    rmsPeak: null,
+                    truePeak: null,
+                    lufs: null
+                };
             }
 
             setAnalyserNode(node) {
@@ -1396,11 +1717,76 @@
 
             setAudioBuffer(buffer) {
                 this.audioBuffer = buffer;
+                if (buffer) {
+                    this.calculateFileStats(buffer);
+                } else {
+                    this.reset();
+                }
+            }
+
+            calculateFileStats(audioBuffer) {
+                const numChannels = audioBuffer.numberOfChannels;
+                const length = audioBuffer.length;
+                const sampleRate = audioBuffer.sampleRate;
+
+                // Calculate RMS Peak
+                let rmsPeakLinear = 0;
+                for (let c = 0; c < numChannels; c++) {
+                    const data = audioBuffer.getChannelData(c);
+                    let sum = 0;
+                    for (let i = 0; i < length; i++) {
+                        sum += data[i] * data[i];
+                    }
+                    const rms = Math.sqrt(sum / length);
+                    if (rms > rmsPeakLinear) rmsPeakLinear = rms;
+                }
+                const rmsPeak = rmsPeakLinear > 0 ? 20 * Math.log10(rmsPeakLinear) : -Infinity;
+
+                // Calculate True Peak (using simple 4x oversampling)
+                let truePeakLinear = 0;
+                for (let c = 0; c < numChannels; c++) {
+                    const data = audioBuffer.getChannelData(c);
+                    for (let i = 0; i < length - 1; i++) {
+                        // Check actual sample
+                        const abs = Math.abs(data[i]);
+                        if (abs > truePeakLinear) truePeakLinear = abs;
+
+                        // Check inter-sample peaks (simple linear interpolation)
+                        for (let j = 1; j <= 3; j++) {
+                            const interSample = data[i] + (data[i + 1] - data[i]) * (j / 4);
+                            const absInter = Math.abs(interSample);
+                            if (absInter > truePeakLinear) truePeakLinear = absInter;
+                        }
+                    }
+                }
+                const truePeak = truePeakLinear > 0 ? 20 * Math.log10(truePeakLinear) : -Infinity;
+
+                // Calculate LUFS (simplified - real LUFS needs K-weighting filter)
+                // Using integrated loudness approximation
+                let integratedSum = 0;
+                for (let c = 0; c < numChannels; c++) {
+                    const data = audioBuffer.getChannelData(c);
+                    for (let i = 0; i < length; i++) {
+                        integratedSum += data[i] * data[i];
+                    }
+                }
+                const integratedRms = Math.sqrt(integratedSum / (length * numChannels));
+                const lufs = integratedRms > 0 ? 20 * Math.log10(integratedRms) - 0.691 : -Infinity;
+
+                this.fileStats = { rmsPeak, truePeak, lufs };
+                this.updateFileStatsDisplay();
+            }
+
+            updateFileStatsDisplay() {
+                const { rmsPeak, truePeak, lufs } = this.fileStats;
+
+                this.rmsPeakValue.textContent = isFinite(rmsPeak) ? rmsPeak.toFixed(1) + ' dB' : '-';
+                this.truePeakValue.textContent = isFinite(truePeak) ? truePeak.toFixed(1) + ' dB' : '-';
+                this.lufsValue.textContent = isFinite(lufs) ? lufs.toFixed(1) + ' LUFS' : '-';
             }
 
             startRealtime() {
                 this.isRealtime = true;
-                this.lufsBuffer = [];
                 this.updateRealtime();
             }
 
@@ -1409,6 +1795,8 @@
                 if (this.animationFrame) {
                     cancelAnimationFrame(this.animationFrame);
                 }
+                // Reset peak display
+                this.updatePeakDisplay(-Infinity);
             }
 
             updateRealtime() {
@@ -1426,115 +1814,15 @@
                 }
                 const peakDb = peak > 0 ? 20 * Math.log10(peak) : -Infinity;
 
-                // Calculate RMS
-                let sum = 0;
-                for (let i = 0; i < bufferLength; i++) {
-                    sum += dataArray[i] * dataArray[i];
-                }
-                const rms = Math.sqrt(sum / bufferLength);
-                const rmsDb = rms > 0 ? 20 * Math.log10(rms) : -Infinity;
-
-                // Approximate LUFS (simplified - real LUFS needs K-weighting)
-                // Using RMS with accumulation for short-term measurement
-                const now = performance.now();
-                this.lufsBuffer.push({ time: now, rms: rms });
-
-                // Remove old samples
-                while (this.lufsBuffer.length > 0 && now - this.lufsBuffer[0].time > this.lufsWindowSize) {
-                    this.lufsBuffer.shift();
-                }
-
-                // Calculate integrated loudness
-                let lufsSum = 0;
-                for (const sample of this.lufsBuffer) {
-                    lufsSum += sample.rms * sample.rms;
-                }
-                const lufsRms = Math.sqrt(lufsSum / Math.max(1, this.lufsBuffer.length));
-                const lufsDb = lufsRms > 0 ? 20 * Math.log10(lufsRms) - 0.691 : -Infinity; // Approximate offset
-
-                this.updateDisplay(peakDb, rmsDb, lufsDb);
+                this.updatePeakDisplay(peakDb);
 
                 this.animationFrame = requestAnimationFrame(() => this.updateRealtime());
             }
 
-            analyzeAtPosition(audioBuffer, startSample, windowSize) {
-                if (!audioBuffer) return;
-
-                const channelData = audioBuffer.getChannelData(0);
-                const endSample = Math.min(startSample + windowSize, channelData.length);
-                const actualStart = Math.max(0, startSample);
-
-                if (actualStart >= channelData.length) {
-                    this.updateDisplay(-Infinity, -Infinity, -Infinity);
-                    return;
-                }
-
-                // Calculate Peak
-                let peak = 0;
-                for (let i = actualStart; i < endSample; i++) {
-                    const abs = Math.abs(channelData[i]);
-                    if (abs > peak) peak = abs;
-                }
-                const peakDb = peak > 0 ? 20 * Math.log10(peak) : -Infinity;
-
-                // Calculate RMS
-                let sum = 0;
-                const count = endSample - actualStart;
-                for (let i = actualStart; i < endSample; i++) {
-                    sum += channelData[i] * channelData[i];
-                }
-                const rms = Math.sqrt(sum / count);
-                const rmsDb = rms > 0 ? 20 * Math.log10(rms) : -Infinity;
-
-                // Approximate LUFS
-                const lufsDb = rmsDb - 0.691;
-
-                this.updateDisplay(peakDb, rmsDb, lufsDb);
-            }
-
-            analyzeSelection(audioBuffer, startSample, endSample) {
-                if (!audioBuffer) return;
-
-                const channelData = audioBuffer.getChannelData(0);
-
-                // Calculate Peak
-                let peak = 0;
-                for (let i = startSample; i < endSample; i++) {
-                    const abs = Math.abs(channelData[i]);
-                    if (abs > peak) peak = abs;
-                }
-                const peakDb = peak > 0 ? 20 * Math.log10(peak) : -Infinity;
-
-                // Calculate RMS
-                let sum = 0;
-                const count = endSample - startSample;
-                for (let i = startSample; i < endSample; i++) {
-                    sum += channelData[i] * channelData[i];
-                }
-                const rms = Math.sqrt(sum / count);
-                const rmsDb = rms > 0 ? 20 * Math.log10(rms) : -Infinity;
-
-                // Approximate LUFS
-                const lufsDb = rmsDb - 0.691;
-
-                this.updateDisplay(peakDb, rmsDb, lufsDb);
-            }
-
-            updateDisplay(peakDb, rmsDb, lufsDb) {
-                // Update Peak
+            updatePeakDisplay(peakDb) {
                 this.peakValue.textContent = isFinite(peakDb) ? peakDb.toFixed(1) : '-∞';
                 this.peakValue.className = 'meter-value' + this.getColorClass(peakDb);
                 this.peakBar.style.width = this.dbToPercent(peakDb) + '%';
-
-                // Update RMS
-                this.rmsValue.textContent = isFinite(rmsDb) ? rmsDb.toFixed(1) : '-∞';
-                this.rmsValue.className = 'meter-value' + this.getColorClass(rmsDb);
-                this.rmsBar.style.width = this.dbToPercent(rmsDb) + '%';
-
-                // Update LUFS
-                this.lufsValue.textContent = isFinite(lufsDb) ? lufsDb.toFixed(1) : '-∞';
-                this.lufsValue.className = 'meter-value' + this.getColorClass(lufsDb);
-                this.lufsBar.style.width = this.dbToPercent(lufsDb) + '%';
             }
 
             getColorClass(db) {
@@ -1550,8 +1838,9 @@
             }
 
             reset() {
-                this.updateDisplay(-Infinity, -Infinity, -Infinity);
-                this.lufsBuffer = [];
+                this.updatePeakDisplay(-Infinity);
+                this.fileStats = { rmsPeak: null, truePeak: null, lufs: null };
+                this.updateFileStatsDisplay();
             }
         }
 
@@ -1845,6 +2134,25 @@
 
                 return audioBuffer;
             }
+
+            reverse(audioBuffer, startSample = 0, endSample = null) {
+                if (endSample === null) endSample = audioBuffer.length;
+                const numChannels = audioBuffer.numberOfChannels;
+
+                for (let c = 0; c < numChannels; c++) {
+                    const data = audioBuffer.getChannelData(c);
+                    // Extract the region to reverse
+                    const region = data.slice(startSample, endSample);
+                    // Reverse it
+                    region.reverse();
+                    // Copy back
+                    for (let i = 0; i < region.length; i++) {
+                        data[startSample + i] = region[i];
+                    }
+                }
+
+                return audioBuffer;
+            }
         }
 
         // ==================== Utility Functions ====================
@@ -1938,6 +2246,55 @@
             }
         }
 
+        // ==================== File Queue Manager ====================
+        class FileQueue {
+            constructor() {
+                this.files = [];
+                this.activeFileId = null;
+            }
+
+            addFile(file) {
+                const id = Date.now() + Math.random();
+                this.files.push({ id, file });
+                return id;
+            }
+
+            addFiles(fileList) {
+                const ids = [];
+                for (const file of fileList) {
+                    ids.push(this.addFile(file));
+                }
+                return ids;
+            }
+
+            removeFile(id) {
+                const index = this.files.findIndex(f => f.id === id);
+                if (index !== -1) {
+                    this.files.splice(index, 1);
+                    if (this.activeFileId === id) {
+                        this.activeFileId = null;
+                    }
+                }
+            }
+
+            getFile(id) {
+                const item = this.files.find(f => f.id === id);
+                return item ? item.file : null;
+            }
+
+            setActive(id) {
+                this.activeFileId = id;
+            }
+
+            getActive() {
+                return this.activeFileId;
+            }
+
+            getAll() {
+                return this.files;
+            }
+        }
+
         // ==================== Main Application ====================
         class App {
             constructor() {
@@ -1948,8 +2305,10 @@
                 this.metering = new Metering();
                 this.audioEditor = null;
                 this.fileName = null;
+                this.fileQueue = new FileQueue();
 
                 this.setupEventListeners();
+                this.setupDragAndDrop();
                 this.updateUI();
             }
 
@@ -1959,7 +2318,11 @@
                     document.getElementById('fileInput').click();
                 });
                 document.getElementById('fileInput').addEventListener('change', (e) => {
-                    if (e.target.files[0]) this.importFile(e.target.files[0]);
+                    if (e.target.files.length > 0) {
+                        const files = Array.from(e.target.files);
+                        this.addFilesToQueue(files);
+                    }
+                    e.target.value = ''; // Reset input
                 });
                 document.getElementById('exportBtn').addEventListener('click', () => this.showExportModal());
 
@@ -1967,6 +2330,7 @@
                 document.getElementById('playBtn').addEventListener('click', () => this.play());
                 document.getElementById('pauseBtn').addEventListener('click', () => this.pause());
                 document.getElementById('stopBtn').addEventListener('click', () => this.stop());
+                document.getElementById('loopBtn').addEventListener('click', () => this.toggleLoop());
 
                 // Zoom
                 document.getElementById('zoomInBtn').addEventListener('click', () => this.waveformRenderer.zoomIn());
@@ -1981,6 +2345,7 @@
                 document.getElementById('fadeInBtn').addEventListener('click', () => this.fadeIn());
                 document.getElementById('fadeOutBtn').addEventListener('click', () => this.fadeOut());
                 document.getElementById('gainBtn').addEventListener('click', () => this.showGainModal());
+                document.getElementById('reverseBtn').addEventListener('click', () => this.reverse());
 
                 // Export modal
                 document.getElementById('exportCancelBtn').addEventListener('click', () => this.hideExportModal());
@@ -2003,6 +2368,13 @@
                     this.audioEngine.setFFTSize(size);
                     this.spectrogramRenderer.setFFTSize(size);
                     this.spectrogramRenderer.render();
+                });
+
+                // Volume slider
+                document.getElementById('volumeSlider').addEventListener('input', (e) => {
+                    const db = parseFloat(e.target.value);
+                    this.audioEngine.setVolume(db);
+                    document.getElementById('volumeValue').textContent = db.toFixed(1) + ' dB';
                 });
 
                 // Waveform callbacks
@@ -2092,10 +2464,22 @@
                         e.preventDefault();
                         this.deleteSelection();
                         break;
+                    case 'l':
+                    case 'L':
+                        if (this.audioEngine.audioBuffer) {
+                            this.toggleLoop();
+                        }
+                        break;
+                    case 'r':
+                    case 'R':
+                        if (this.audioEngine.audioBuffer) {
+                            this.reverse();
+                        }
+                        break;
                 }
             }
 
-            async importFile(file) {
+            async importFile(file, fileId = null) {
                 try {
                     this.fileName = file.name;
                     const arrayBuffer = await FileHandler.importFile(file);
@@ -2121,6 +2505,12 @@
                     this.metering.setAudioBuffer(audioBuffer);
                     this.metering.setAnalyserNode(this.audioEngine.getAnalyserNode());
 
+                    // Update active file in queue
+                    if (fileId) {
+                        this.fileQueue.setActive(fileId);
+                        this.renderFileList();
+                    }
+
                     this.updateUI();
                     this.updateFileInfo();
                     this.updateZoomInfo();
@@ -2128,6 +2518,126 @@
                 } catch (err) {
                     alert('Error loading audio file: ' + err.message);
                 }
+            }
+
+            setupDragAndDrop() {
+                const waveformContainer = document.querySelector('.waveform-container');
+                const dragOverlay = document.getElementById('dragOverlay');
+
+                // Prevent default drag behaviors
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    waveformContainer.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }, false);
+                });
+
+                // Show overlay on drag enter/over
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    waveformContainer.addEventListener(eventName, () => {
+                        dragOverlay.classList.add('visible');
+                    }, false);
+                });
+
+                // Hide overlay on drag leave
+                waveformContainer.addEventListener('dragleave', (e) => {
+                    if (e.target === waveformContainer) {
+                        dragOverlay.classList.remove('visible');
+                    }
+                }, false);
+
+                // Handle drop
+                waveformContainer.addEventListener('drop', (e) => {
+                    dragOverlay.classList.remove('visible');
+                    const files = Array.from(e.dataTransfer.files).filter(f =>
+                        f.name.toLowerCase().endsWith('.wav') ||
+                        f.name.toLowerCase().endsWith('.aif') ||
+                        f.name.toLowerCase().endsWith('.aiff')
+                    );
+
+                    if (files.length > 0) {
+                        this.addFilesToQueue(files);
+                    }
+                }, false);
+            }
+
+            addFilesToQueue(files) {
+                const ids = this.fileQueue.addFiles(files);
+                this.renderFileList();
+
+                // Auto-load the first file if nothing is currently loaded
+                if (!this.audioEngine.audioBuffer && files.length > 0) {
+                    this.loadFileFromQueue(ids[0]);
+                }
+            }
+
+            loadFileFromQueue(fileId) {
+                const file = this.fileQueue.getFile(fileId);
+                if (file) {
+                    this.importFile(file, fileId);
+                }
+            }
+
+            removeFileFromQueue(fileId) {
+                const wasActive = this.fileQueue.getActive() === fileId;
+                this.fileQueue.removeFile(fileId);
+                this.renderFileList();
+
+                // If we removed the active file, clear the editor
+                if (wasActive) {
+                    this.audioEngine.stop();
+                    this.audioEngine.audioBuffer = null;
+                    this.waveformRenderer.setAudioBuffer(null);
+                    this.spectrogramRenderer.setAudioBuffer(null);
+                    this.fileName = null;
+                    this.updateUI();
+                    this.updateFileInfo();
+
+                    // Load the first remaining file if any
+                    const files = this.fileQueue.getAll();
+                    if (files.length > 0) {
+                        this.loadFileFromQueue(files[0].id);
+                    }
+                }
+            }
+
+            renderFileList() {
+                const fileListContainer = document.getElementById('fileList');
+                const activeId = this.fileQueue.getActive();
+                const files = this.fileQueue.getAll();
+
+                fileListContainer.innerHTML = '';
+
+                files.forEach(({ id, file }) => {
+                    const item = document.createElement('div');
+                    item.className = 'file-item';
+                    if (id === activeId) {
+                        item.classList.add('active');
+                    }
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'file-name';
+                    nameSpan.textContent = file.name;
+                    nameSpan.title = file.name;
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'file-delete';
+                    deleteBtn.innerHTML = '×';
+                    deleteBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        this.removeFileFromQueue(id);
+                    };
+
+                    item.onclick = () => {
+                        if (id !== activeId) {
+                            this.loadFileFromQueue(id);
+                        }
+                    };
+
+                    item.appendChild(nameSpan);
+                    item.appendChild(deleteBtn);
+                    fileListContainer.appendChild(item);
+                });
             }
 
             play() {
@@ -2177,6 +2687,12 @@
                 this.updateAnalysis();
             }
 
+            toggleLoop() {
+                const isLooping = !this.audioEngine.isLooping();
+                this.audioEngine.setLooping(isLooping);
+                document.getElementById('loopBtn').classList.toggle('loop-active', isLooping);
+            }
+
             startRealtimeAnalysis() {
                 this.spectrogramRenderer.startRealtime();
                 this.metering.startRealtime();
@@ -2188,26 +2704,9 @@
             }
 
             updateAnalysis() {
-                if (!this.audioEngine.audioBuffer) return;
-
-                const selection = this.waveformRenderer.getSelection();
-                if (selection) {
-                    // Analyze selection
-                    this.metering.analyzeSelection(
-                        this.audioEngine.audioBuffer,
-                        selection.start,
-                        selection.end
-                    );
-                } else {
-                    // Analyze at playhead position
-                    const sampleRate = this.audioEngine.audioBuffer.sampleRate;
-                    const windowSize = Math.floor(sampleRate * 0.1); // 100ms window
-                    this.metering.analyzeAtPosition(
-                        this.audioEngine.audioBuffer,
-                        this.waveformRenderer.playheadPosition,
-                        windowSize
-                    );
-                }
+                // File-wide stats are calculated when file is loaded
+                // Real-time metering happens during playback
+                // No need for additional analysis here
             }
 
             undo() {
@@ -2330,6 +2829,23 @@
                 this.updateAnalysis();
             }
 
+            reverse() {
+                const selection = this.waveformRenderer.getSelection();
+
+                this.stop();
+                this.saveStateForUndo();
+                if (selection) {
+                    this.audioEditor.reverse(this.audioEngine.audioBuffer, selection.start, selection.end);
+                } else {
+                    this.audioEditor.reverse(this.audioEngine.audioBuffer);
+                }
+                this.waveformRenderer.calculatePeaks();
+                this.waveformRenderer.render();
+                this.spectrogramRenderer.render();
+                this.updateUI();
+                this.updateAnalysis();
+            }
+
             showGainModal() {
                 document.getElementById('gainModal').classList.add('visible');
             }
@@ -2405,6 +2921,7 @@
                 document.getElementById('playBtn').disabled = !hasAudio;
                 document.getElementById('pauseBtn').disabled = !isPlaying;
                 document.getElementById('stopBtn').disabled = !hasAudio;
+                document.getElementById('loopBtn').disabled = !hasAudio;
                 document.getElementById('playBtn').classList.toggle('playing', isPlaying);
 
                 // Zoom
@@ -2420,6 +2937,7 @@
                 document.getElementById('fadeInBtn').disabled = !hasSelection;
                 document.getElementById('fadeOutBtn').disabled = !hasSelection;
                 document.getElementById('gainBtn').disabled = !hasAudio;
+                document.getElementById('reverseBtn').disabled = !hasAudio;
             }
 
             updateFileInfo() {

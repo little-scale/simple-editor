@@ -1,0 +1,2460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Audio Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            padding: 8px 12px;
+            background-color: #2a2a2a;
+            border-bottom: 1px solid #3a3a3a;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .toolbar-group {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            padding-right: 12px;
+            border-right: 1px solid #3a3a3a;
+        }
+
+        .toolbar-group:last-child {
+            border-right: none;
+        }
+
+        .toolbar-label {
+            font-size: 11px;
+            color: #888;
+            margin-right: 4px;
+        }
+
+        button {
+            background-color: #3a3a3a;
+            color: #e0e0e0;
+            border: 1px solid #4a4a4a;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background-color 0.15s;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #4a4a4a;
+        }
+
+        button:active:not(:disabled) {
+            background-color: #5a5a5a;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        button.primary {
+            background-color: #2563eb;
+            border-color: #3b82f6;
+        }
+
+        button.primary:hover:not(:disabled) {
+            background-color: #3b82f6;
+        }
+
+        button.transport {
+            width: 40px;
+            font-size: 16px;
+            padding: 6px;
+        }
+
+        button.transport.playing {
+            background-color: #059669;
+            border-color: #10b981;
+        }
+
+        /* Main content area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        /* Editor area (waveform + spectrogram) */
+        .editor-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Waveform container */
+        .waveform-container {
+            flex: 3;
+            position: relative;
+            background-color: #1a1a1a;
+            overflow: hidden;
+            min-height: 120px;
+        }
+
+        #waveformCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Spectrogram container */
+        .spectrogram-container {
+            flex: 1;
+            position: relative;
+            background-color: #0a0a0a;
+            border-top: 1px solid #3a3a3a;
+            min-height: 80px;
+            max-height: 150px;
+        }
+
+        #spectrogramCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .spectrogram-label {
+            position: absolute;
+            top: 4px;
+            left: 8px;
+            font-size: 10px;
+            color: #666;
+        }
+
+        /* Meters panel */
+        .meters-panel {
+            width: 140px;
+            background-color: #222;
+            border-left: 1px solid #3a3a3a;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .meter {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .meter-label {
+            font-size: 10px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .meter-value {
+            font-size: 18px;
+            font-family: monospace;
+            font-weight: 600;
+            color: #4ade80;
+        }
+
+        .meter-value.warning {
+            color: #fbbf24;
+        }
+
+        .meter-value.danger {
+            color: #ef4444;
+        }
+
+        .meter-bar-container {
+            height: 6px;
+            background-color: #1a1a1a;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .meter-bar {
+            height: 100%;
+            background: linear-gradient(to right, #4ade80, #fbbf24, #ef4444);
+            border-radius: 3px;
+            transition: width 0.05s;
+        }
+
+        .meter-unit {
+            font-size: 9px;
+            color: #666;
+        }
+
+        /* FFT size selector */
+        .fft-select {
+            background-color: #1a1a1a;
+            border: 1px solid #4a4a4a;
+            color: #e0e0e0;
+            padding: 4px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        /* Selection info overlay */
+        .selection-info {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: monospace;
+            display: none;
+        }
+
+        .selection-info.visible {
+            display: block;
+        }
+
+        /* Status bar */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 12px;
+            background-color: #2a2a2a;
+            border-top: 1px solid #3a3a3a;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .status-bar .info {
+            display: flex;
+            gap: 16px;
+        }
+
+        /* Modal overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .modal-overlay.visible {
+            display: flex;
+        }
+
+        .modal {
+            background-color: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            border-radius: 8px;
+            padding: 20px;
+            min-width: 300px;
+            max-width: 400px;
+        }
+
+        .modal h3 {
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+
+        .modal-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 12px;
+        }
+
+        .modal-row label {
+            flex: 0 0 100px;
+            font-size: 13px;
+        }
+
+        .modal-row select,
+        .modal-row input {
+            flex: 1;
+            background-color: #1a1a1a;
+            border: 1px solid #4a4a4a;
+            color: #e0e0e0;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        /* Hidden file input */
+        #fileInput {
+            display: none;
+        }
+
+        /* Keyboard shortcuts hint */
+        .shortcuts-hint {
+            font-size: 11px;
+            color: #666;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+    <input type="file" id="fileInput" accept=".wav,.aif,.aiff">
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <div class="toolbar-group">
+            <span class="toolbar-label">File</span>
+            <button id="importBtn">Import</button>
+            <button id="exportBtn" disabled>Export</button>
+        </div>
+        <div class="toolbar-group">
+            <span class="toolbar-label">Transport</span>
+            <button id="playBtn" class="transport" disabled title="Play (Space)">&#9654;</button>
+            <button id="pauseBtn" class="transport" disabled title="Pause (Space)">&#10074;&#10074;</button>
+            <button id="stopBtn" class="transport" disabled title="Stop">&#9632;</button>
+        </div>
+        <div class="toolbar-group">
+            <span class="toolbar-label">Zoom</span>
+            <button id="zoomInBtn" disabled title="Zoom In (+)">+</button>
+            <button id="zoomOutBtn" disabled title="Zoom Out (-)">-</button>
+            <button id="zoomFitBtn" disabled title="Fit to Window">Fit</button>
+            <span class="shortcuts-hint">Shift+Scroll to zoom</span>
+        </div>
+        <div class="toolbar-group">
+            <span class="toolbar-label">Edit</span>
+            <button id="undoBtn" disabled title="Undo (⌘Z)">Undo</button>
+            <button id="redoBtn" disabled title="Redo (⌘⇧Z)">Redo</button>
+            <button id="trimBtn" disabled title="Trim to selection">Trim</button>
+            <button id="normalizeBtn" disabled title="Normalize">Normalize</button>
+            <button id="fadeInBtn" disabled title="Fade In">Fade In</button>
+            <button id="fadeOutBtn" disabled title="Fade Out">Fade Out</button>
+            <button id="gainBtn" disabled title="Apply Gain">Gain</button>
+        </div>
+        <div class="toolbar-group">
+            <span class="toolbar-label">FFT</span>
+            <select id="fftSize" class="fft-select">
+                <option value="256">256</option>
+                <option value="512">512</option>
+                <option value="1024">1024</option>
+                <option value="2048" selected>2048</option>
+                <option value="4096">4096</option>
+                <option value="8192">8192</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Main content area -->
+    <div class="main-content">
+        <!-- Editor area -->
+        <div class="editor-area">
+            <!-- Waveform -->
+            <div class="waveform-container">
+                <canvas id="waveformCanvas"></canvas>
+                <div class="selection-info" id="selectionInfo"></div>
+            </div>
+            <!-- Spectrogram -->
+            <div class="spectrogram-container">
+                <canvas id="spectrogramCanvas"></canvas>
+                <span class="spectrogram-label">Spectrum</span>
+            </div>
+        </div>
+
+        <!-- Meters panel -->
+        <div class="meters-panel">
+            <div class="meter">
+                <span class="meter-label">Peak</span>
+                <span class="meter-value" id="peakValue">-∞</span>
+                <span class="meter-unit">dBFS</span>
+                <div class="meter-bar-container">
+                    <div class="meter-bar" id="peakBar" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="meter">
+                <span class="meter-label">RMS</span>
+                <span class="meter-value" id="rmsValue">-∞</span>
+                <span class="meter-unit">dBFS</span>
+                <div class="meter-bar-container">
+                    <div class="meter-bar" id="rmsBar" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="meter">
+                <span class="meter-label">LUFS</span>
+                <span class="meter-value" id="lufsValue">-∞</span>
+                <span class="meter-unit">Short-term</span>
+                <div class="meter-bar-container">
+                    <div class="meter-bar" id="lufsBar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status bar -->
+    <div class="status-bar">
+        <div class="info">
+            <span id="fileInfo">No file loaded</span>
+            <span id="positionInfo"></span>
+        </div>
+        <span id="zoomInfo"></span>
+    </div>
+
+    <!-- Export Modal -->
+    <div class="modal-overlay" id="exportModal">
+        <div class="modal">
+            <h3>Export Audio</h3>
+            <div class="modal-row">
+                <label>Format</label>
+                <select id="exportFormat">
+                    <option value="wav">WAV</option>
+                    <option value="aif">AIF</option>
+                </select>
+            </div>
+            <div class="modal-row">
+                <label>Bit Depth</label>
+                <select id="exportBitDepth">
+                    <option value="16">16-bit</option>
+                    <option value="24">24-bit</option>
+                    <option value="32">32-bit float</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button id="exportCancelBtn">Cancel</button>
+                <button id="exportConfirmBtn" class="primary">Export</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Normalize Modal -->
+    <div class="modal-overlay" id="normalizeModal">
+        <div class="modal">
+            <h3>Normalize</h3>
+            <div class="modal-row">
+                <label>Peak Level (dBFS)</label>
+                <input type="number" id="normalizeLevel" value="0" min="-60" max="0" step="0.1">
+            </div>
+            <div class="modal-buttons">
+                <button id="normalizeCancelBtn">Cancel</button>
+                <button id="normalizeConfirmBtn" class="primary">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gain Modal -->
+    <div class="modal-overlay" id="gainModal">
+        <div class="modal">
+            <h3>Apply Gain</h3>
+            <div class="modal-row">
+                <label>Gain (dB)</label>
+                <input type="number" id="gainAmount" value="0" min="-60" max="60" step="0.1">
+            </div>
+            <div class="modal-buttons">
+                <button id="gainCancelBtn">Cancel</button>
+                <button id="gainConfirmBtn" class="primary">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== Audio Engine ====================
+        class AudioEngine {
+            constructor() {
+                this.audioContext = null;
+                this.audioBuffer = null;
+                this.sourceNode = null;
+                this.analyserNode = null;
+                this.isPlaying = false;
+                this.isPaused = false;
+                this.startTime = 0;
+                this.pauseTime = 0;
+                this.onPlaybackEnd = null;
+                this.onPositionUpdate = null;
+                this.animationFrame = null;
+                this.fftSize = 2048;
+            }
+
+            async init() {
+                if (!this.audioContext) {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.audioContext.state === 'suspended') {
+                    await this.audioContext.resume();
+                }
+                if (!this.analyserNode) {
+                    this.analyserNode = this.audioContext.createAnalyser();
+                    this.analyserNode.fftSize = this.fftSize;
+                    this.analyserNode.smoothingTimeConstant = 0.8;
+                    this.analyserNode.connect(this.audioContext.destination);
+                }
+            }
+
+            setFFTSize(size) {
+                this.fftSize = size;
+                if (this.analyserNode) {
+                    this.analyserNode.fftSize = size;
+                }
+            }
+
+            getAnalyserNode() {
+                return this.analyserNode;
+            }
+
+            async loadAudio(arrayBuffer) {
+                await this.init();
+                this.stop();
+                this.audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+                return this.audioBuffer;
+            }
+
+            play(startOffset = 0) {
+                if (!this.audioBuffer) return;
+
+                this.stopPlayback();
+                this.sourceNode = this.audioContext.createBufferSource();
+                this.sourceNode.buffer = this.audioBuffer;
+                this.sourceNode.connect(this.analyserNode);
+
+                this.sourceNode.onended = () => {
+                    if (this.isPlaying && !this.isPaused) {
+                        this.stop();
+                        if (this.onPlaybackEnd) this.onPlaybackEnd();
+                    }
+                };
+
+                this.sourceNode.start(0, startOffset);
+                this.startTime = this.audioContext.currentTime - startOffset;
+                this.isPlaying = true;
+                this.isPaused = false;
+
+                this.updatePosition();
+            }
+
+            playSelection(startTime, endTime) {
+                if (!this.audioBuffer) return;
+
+                this.stopPlayback();
+                this.sourceNode = this.audioContext.createBufferSource();
+                this.sourceNode.buffer = this.audioBuffer;
+                this.sourceNode.connect(this.analyserNode);
+
+                this.sourceNode.onended = () => {
+                    if (this.isPlaying && !this.isPaused) {
+                        this.stop();
+                        if (this.onPlaybackEnd) this.onPlaybackEnd();
+                    }
+                };
+
+                const duration = endTime - startTime;
+                this.sourceNode.start(0, startTime, duration);
+                this.startTime = this.audioContext.currentTime - startTime;
+                this.isPlaying = true;
+                this.isPaused = false;
+
+                this.updatePosition();
+            }
+
+            resume() {
+                if (!this.isPaused) return;
+                this.play(this.pauseTime);
+            }
+
+            stopPlayback() {
+                if (this.sourceNode) {
+                    try {
+                        this.sourceNode.stop();
+                    } catch (e) {}
+                    this.sourceNode.disconnect();
+                    this.sourceNode = null;
+                }
+                cancelAnimationFrame(this.animationFrame);
+            }
+
+            pause() {
+                if (!this.isPlaying || this.isPaused) return;
+                this.pauseTime = this.getCurrentTime();
+                this.sourceNode.stop();
+                this.isPaused = true;
+                this.isPlaying = false;
+                cancelAnimationFrame(this.animationFrame);
+            }
+
+            stop() {
+                this.stopPlayback();
+                this.isPlaying = false;
+                this.isPaused = false;
+                this.pauseTime = 0;
+            }
+
+            getCurrentTime() {
+                if (this.isPaused) return this.pauseTime;
+                if (!this.isPlaying) return 0;
+                return this.audioContext.currentTime - this.startTime;
+            }
+
+            getDuration() {
+                return this.audioBuffer ? this.audioBuffer.duration : 0;
+            }
+
+            updatePosition() {
+                if (!this.isPlaying) return;
+                if (this.onPositionUpdate) {
+                    this.onPositionUpdate(this.getCurrentTime());
+                }
+                this.animationFrame = requestAnimationFrame(() => this.updatePosition());
+            }
+
+            setBuffer(buffer) {
+                this.stop();
+                this.audioBuffer = buffer;
+            }
+        }
+
+        // ==================== Waveform Renderer ====================
+        class WaveformRenderer {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.audioBuffer = null;
+                this.samplesPerPixel = 100;
+                this.scrollOffset = 0;
+                this.selectionStart = null;
+                this.selectionEnd = null;
+                this.playheadPosition = 0;
+                this.peaks = null;
+                this.isDragging = false;
+                this.dragStart = 0;
+
+                this.setupResize();
+                this.setupInteraction();
+            }
+
+            setupResize() {
+                const resizeObserver = new ResizeObserver(() => this.resize());
+                resizeObserver.observe(this.canvas.parentElement);
+                this.resize();
+            }
+
+            resize() {
+                const rect = this.canvas.parentElement.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                this.canvas.width = rect.width * dpr;
+                this.canvas.height = rect.height * dpr;
+                this.ctx.scale(dpr, dpr);
+                this.width = rect.width;
+                this.height = rect.height;
+                this.render();
+            }
+
+            setupInteraction() {
+                this.canvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
+                this.canvas.addEventListener('mousemove', (e) => this.onMouseMove(e));
+                this.canvas.addEventListener('mouseup', (e) => this.onMouseUp(e));
+                this.canvas.addEventListener('mouseleave', (e) => this.onMouseUp(e));
+                this.canvas.addEventListener('dblclick', (e) => this.onDoubleClick(e));
+                this.canvas.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
+            }
+
+            onDoubleClick(e) {
+                if (!this.audioBuffer) return;
+                this.selectAll();
+            }
+
+            selectAll() {
+                if (!this.audioBuffer) return;
+                this.selectionStart = 0;
+                this.selectionEnd = this.audioBuffer.length;
+                this.playheadPosition = 0;
+                this.render();
+                this.updateSelectionInfo();
+                if (this.onPlayheadChange) this.onPlayheadChange(0);
+                if (this.onSelectionUpdate) this.onSelectionUpdate(0, this.audioBuffer.length);
+                if (this.onSelectionChange) this.onSelectionChange();
+            }
+
+            onMouseDown(e) {
+                if (!this.audioBuffer) return;
+                this.isDragging = true;
+                this.dragStartX = e.offsetX;
+                this.dragStartSample = this.pixelToSample(e.offsetX);
+                this.hasDragged = false;
+
+                // Immediately move playhead to click position
+                this.playheadPosition = this.dragStartSample;
+                this.selectionStart = null;
+                this.selectionEnd = null;
+                this.render();
+                if (this.onPlayheadChange) this.onPlayheadChange(this.playheadPosition);
+                if (this.onSelectionUpdate) this.onSelectionUpdate(null, null);
+            }
+
+            onMouseMove(e) {
+                if (!this.isDragging || !this.audioBuffer) return;
+                const x = e.offsetX;
+                const dragDistance = Math.abs(x - this.dragStartX);
+
+                // Only start selection if dragged more than 5 pixels
+                if (dragDistance > 5) {
+                    this.hasDragged = true;
+                    this.selectionStart = this.dragStartSample;
+                    this.selectionEnd = this.pixelToSample(x);
+                    this.render();
+                    this.updateSelectionInfo();
+                    if (this.onSelectionUpdate) this.onSelectionUpdate(this.selectionStart, this.selectionEnd);
+                }
+            }
+
+            onMouseUp(e) {
+                if (!this.isDragging) return;
+                this.isDragging = false;
+
+                if (this.hasDragged) {
+                    // Normalize selection (start < end)
+                    if (this.selectionStart !== null && this.selectionEnd !== null) {
+                        if (this.selectionStart > this.selectionEnd) {
+                            [this.selectionStart, this.selectionEnd] = [this.selectionEnd, this.selectionStart];
+                        }
+                        // Clear selection if too small
+                        if (this.selectionEnd - this.selectionStart < 10) {
+                            this.selectionStart = null;
+                            this.selectionEnd = null;
+                        }
+                    }
+                    this.render();
+                    this.updateSelectionInfo();
+                    if (this.onSelectionUpdate) this.onSelectionUpdate(this.selectionStart, this.selectionEnd);
+                    if (this.onSelectionChange) this.onSelectionChange();
+                } else {
+                    // It was a click, not a drag - playhead already moved in onMouseDown
+                    if (this.onSelectionChange) this.onSelectionChange();
+                }
+            }
+
+            onWheel(e) {
+                if (!this.audioBuffer) return;
+                e.preventDefault();
+
+                const hasHorizontalScroll = Math.abs(e.deltaX) > Math.abs(e.deltaY) * 0.5;
+
+                if (hasHorizontalScroll) {
+                    // Horizontal scroll (trackpad left/right)
+                    const scrollAmount = e.deltaX * this.samplesPerPixel * 0.5;
+                    this.scrollOffset += scrollAmount;
+                    this.clampScroll();
+                    this.calculatePeaks();
+                    this.render();
+                    if (this.onScrollChange) this.onScrollChange();
+                } else if (Math.abs(e.deltaY) > 0) {
+                    // Vertical scroll = zoom (trackpad up/down)
+                    const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
+                    const mouseX = e.offsetX;
+                    const sampleAtMouse = this.pixelToSample(mouseX);
+
+                    this.samplesPerPixel = Math.max(1, Math.min(
+                        this.audioBuffer.length / 100,
+                        this.samplesPerPixel * zoomFactor
+                    ));
+
+                    // Adjust scroll to keep sample under mouse
+                    this.scrollOffset = sampleAtMouse - mouseX * this.samplesPerPixel;
+                    this.clampScroll();
+                    this.calculatePeaks();
+                    this.render();
+                    if (this.onZoomChange) this.onZoomChange();
+                }
+            }
+
+            setAudioBuffer(buffer) {
+                this.audioBuffer = buffer;
+                this.selectionStart = null;
+                this.selectionEnd = null;
+                this.scrollOffset = 0;
+                this.playheadPosition = 0;
+                if (this.onSelectionUpdate) this.onSelectionUpdate(null, null);
+                this.zoomFit();
+            }
+
+            zoomFit() {
+                if (!this.audioBuffer) return;
+                this.samplesPerPixel = this.audioBuffer.length / this.width;
+                this.scrollOffset = 0;
+                this.calculatePeaks();
+                this.render();
+                if (this.onZoomChange) this.onZoomChange();
+            }
+
+            zoomIn() {
+                if (!this.audioBuffer) return;
+                this.samplesPerPixel = Math.max(1, this.samplesPerPixel * 0.5);
+                this.clampScroll();
+                this.calculatePeaks();
+                this.render();
+                if (this.onZoomChange) this.onZoomChange();
+            }
+
+            zoomOut() {
+                if (!this.audioBuffer) return;
+                this.samplesPerPixel = Math.min(
+                    this.audioBuffer.length / 100,
+                    this.samplesPerPixel * 2
+                );
+                this.clampScroll();
+                this.calculatePeaks();
+                this.render();
+                if (this.onZoomChange) this.onZoomChange();
+            }
+
+            clampScroll() {
+                const maxScroll = Math.max(0, this.audioBuffer.length - this.width * this.samplesPerPixel);
+                this.scrollOffset = Math.max(0, Math.min(maxScroll, this.scrollOffset));
+            }
+
+            pixelToSample(x) {
+                return Math.floor(this.scrollOffset + x * this.samplesPerPixel);
+            }
+
+            sampleToPixel(sample) {
+                return (sample - this.scrollOffset) / this.samplesPerPixel;
+            }
+
+            calculatePeaks() {
+                if (!this.audioBuffer) return;
+
+                const channelData = this.audioBuffer.getChannelData(0);
+                const numPeaks = Math.ceil(this.width);
+                this.peaks = new Float32Array(numPeaks * 2);
+
+                for (let i = 0; i < numPeaks; i++) {
+                    const startSample = Math.floor(this.scrollOffset + i * this.samplesPerPixel);
+                    const endSample = Math.floor(startSample + this.samplesPerPixel);
+
+                    let min = 0, max = 0;
+                    for (let j = startSample; j < endSample && j < channelData.length; j++) {
+                        if (j >= 0) {
+                            const value = channelData[j];
+                            if (value < min) min = value;
+                            if (value > max) max = value;
+                        }
+                    }
+                    this.peaks[i * 2] = min;
+                    this.peaks[i * 2 + 1] = max;
+                }
+            }
+
+            setPlayheadPosition(time) {
+                if (!this.audioBuffer) return;
+                const sample = Math.floor(time * this.audioBuffer.sampleRate);
+                this.playheadPosition = sample;
+                this.render();
+            }
+
+            getSelection() {
+                if (this.selectionStart === null || this.selectionEnd === null) return null;
+                return {
+                    start: Math.min(this.selectionStart, this.selectionEnd),
+                    end: Math.max(this.selectionStart, this.selectionEnd)
+                };
+            }
+
+            hasSelection() {
+                return this.selectionStart !== null && this.selectionEnd !== null;
+            }
+
+            updateSelectionInfo() {
+                const info = document.getElementById('selectionInfo');
+                const selection = this.getSelection();
+                if (!selection || !this.audioBuffer) {
+                    info.classList.remove('visible');
+                    return;
+                }
+
+                const startTime = selection.start / this.audioBuffer.sampleRate;
+                const endTime = selection.end / this.audioBuffer.sampleRate;
+                const duration = endTime - startTime;
+
+                info.textContent = `Selection: ${formatTime(startTime)} - ${formatTime(endTime)} (${formatTime(duration)})`;
+                info.classList.add('visible');
+            }
+
+            render() {
+                const ctx = this.ctx;
+                const width = this.width;
+                const height = this.height;
+
+                // Clear
+                ctx.fillStyle = '#1a1a1a';
+                ctx.fillRect(0, 0, width, height);
+
+                if (!this.audioBuffer || !this.peaks) {
+                    // Draw placeholder text
+                    ctx.fillStyle = '#444';
+                    ctx.font = '16px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Import an audio file to begin', width / 2, height / 2);
+                    return;
+                }
+
+                const centerY = height / 2;
+                const amplitude = height / 2 - 10;
+
+                // Draw selection
+                if (this.selectionStart !== null && this.selectionEnd !== null) {
+                    const startX = this.sampleToPixel(Math.min(this.selectionStart, this.selectionEnd));
+                    const endX = this.sampleToPixel(Math.max(this.selectionStart, this.selectionEnd));
+                    ctx.fillStyle = 'rgba(37, 99, 235, 0.3)';
+                    ctx.fillRect(startX, 0, endX - startX, height);
+                }
+
+                // Draw center line
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, centerY);
+                ctx.lineTo(width, centerY);
+                ctx.stroke();
+
+                // Draw waveform
+                ctx.fillStyle = '#3b82f6';
+                for (let i = 0; i < this.peaks.length / 2; i++) {
+                    const min = this.peaks[i * 2];
+                    const max = this.peaks[i * 2 + 1];
+                    const y1 = centerY - max * amplitude;
+                    const y2 = centerY - min * amplitude;
+                    ctx.fillRect(i, y1, 1, Math.max(1, y2 - y1));
+                }
+
+                // Draw playhead
+                const playheadX = this.sampleToPixel(this.playheadPosition);
+                if (playheadX >= 0 && playheadX <= width) {
+                    ctx.strokeStyle = '#ef4444';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(playheadX, 0);
+                    ctx.lineTo(playheadX, height);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        // ==================== Spectrogram Renderer ====================
+        class SpectrogramRenderer {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.audioBuffer = null;
+                this.fftSize = 2048;
+                this.analyserNode = null;
+                this.isRealtime = false;
+                this.animationFrame = null;
+                this.scrollOffset = 0;
+                this.samplesPerPixel = 100;
+                this.playheadPosition = 0;
+                this.selectionStart = null;
+                this.selectionEnd = null;
+                this.smoothedSpectrum = null;
+
+                this.setupResize();
+            }
+
+            setupResize() {
+                const resizeObserver = new ResizeObserver(() => this.resize());
+                resizeObserver.observe(this.canvas.parentElement);
+                this.resize();
+            }
+
+            resize() {
+                const rect = this.canvas.parentElement.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                this.canvas.width = rect.width * dpr;
+                this.canvas.height = rect.height * dpr;
+                this.ctx.scale(dpr, dpr);
+                this.width = rect.width;
+                this.height = rect.height;
+                this.render();
+            }
+
+            setAudioBuffer(buffer) {
+                this.audioBuffer = buffer;
+                this.smoothedSpectrum = null;
+                this.render();
+            }
+
+            setAnalyserNode(node) {
+                this.analyserNode = node;
+            }
+
+            setFFTSize(size) {
+                this.fftSize = size;
+                this.smoothedSpectrum = null;
+            }
+
+            setScrollOffset(offset) {
+                this.scrollOffset = offset;
+                if (!this.isRealtime) this.render();
+            }
+
+            setSamplesPerPixel(spp) {
+                this.samplesPerPixel = spp;
+                if (!this.isRealtime) this.render();
+            }
+
+            setPlayheadPosition(sample) {
+                this.playheadPosition = sample;
+                if (!this.isRealtime) this.render();
+            }
+
+            setSelection(start, end) {
+                this.selectionStart = start;
+                this.selectionEnd = end;
+                if (!this.isRealtime) this.render();
+            }
+
+            sampleToPixel(sample) {
+                return (sample - this.scrollOffset) / this.samplesPerPixel;
+            }
+
+            startRealtime() {
+                this.isRealtime = true;
+                this.smoothedSpectrum = null;
+                this.renderRealtime();
+            }
+
+            stopRealtime() {
+                this.isRealtime = false;
+                if (this.animationFrame) {
+                    cancelAnimationFrame(this.animationFrame);
+                }
+                this.smoothedSpectrum = null;
+                this.render();
+            }
+
+            renderRealtime() {
+                if (!this.isRealtime || !this.analyserNode) return;
+
+                const ctx = this.ctx;
+                const width = this.width;
+                const height = this.height;
+                const frequencyData = new Uint8Array(this.analyserNode.frequencyBinCount);
+                this.analyserNode.getByteFrequencyData(frequencyData);
+
+                // Clear with dark background
+                ctx.fillStyle = '#0d1117';
+                ctx.fillRect(0, 0, width, height);
+
+                // Smooth the spectrum data
+                const numBins = 128; // Reduce to fewer bins for smoother display
+                const binnedData = new Float32Array(numBins);
+                const binSize = Math.floor(frequencyData.length / numBins);
+
+                for (let i = 0; i < numBins; i++) {
+                    let sum = 0;
+                    const start = i * binSize;
+                    for (let j = 0; j < binSize; j++) {
+                        sum += frequencyData[start + j];
+                    }
+                    binnedData[i] = sum / binSize / 255;
+                }
+
+                // Apply smoothing over time
+                if (!this.smoothedSpectrum || this.smoothedSpectrum.length !== numBins) {
+                    this.smoothedSpectrum = new Float32Array(binnedData);
+                } else {
+                    const smoothing = 0.7;
+                    for (let i = 0; i < numBins; i++) {
+                        this.smoothedSpectrum[i] = this.smoothedSpectrum[i] * smoothing + binnedData[i] * (1 - smoothing);
+                    }
+                }
+
+                // Create gradient for fill
+                const gradient = ctx.createLinearGradient(0, height, 0, 0);
+                gradient.addColorStop(0, 'rgba(59, 130, 246, 0.1)');
+                gradient.addColorStop(0.5, 'rgba(59, 130, 246, 0.4)');
+                gradient.addColorStop(1, 'rgba(147, 51, 234, 0.8)');
+
+                // Draw smooth filled curve
+                ctx.beginPath();
+                ctx.moveTo(0, height);
+
+                for (let i = 0; i < numBins; i++) {
+                    // Logarithmic frequency scale
+                    const logPos = Math.log10(1 + i * 9 / numBins) / Math.log10(10);
+                    const x = logPos * width;
+                    const barHeight = this.smoothedSpectrum[i] * height * 0.9;
+
+                    if (i === 0) {
+                        ctx.lineTo(x, height - barHeight);
+                    } else {
+                        // Use quadratic curves for smoothness
+                        const prevLogPos = Math.log10(1 + (i - 1) * 9 / numBins) / Math.log10(10);
+                        const prevX = prevLogPos * width;
+                        const cpX = (prevX + x) / 2;
+                        const prevHeight = this.smoothedSpectrum[i - 1] * height * 0.9;
+                        ctx.quadraticCurveTo(prevX, height - prevHeight, cpX, height - (prevHeight + barHeight) / 2);
+                    }
+                }
+
+                ctx.lineTo(width, height);
+                ctx.closePath();
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                // Draw the line on top
+                ctx.beginPath();
+                for (let i = 0; i < numBins; i++) {
+                    const logPos = Math.log10(1 + i * 9 / numBins) / Math.log10(10);
+                    const x = logPos * width;
+                    const barHeight = this.smoothedSpectrum[i] * height * 0.9;
+
+                    if (i === 0) {
+                        ctx.moveTo(x, height - barHeight);
+                    } else {
+                        const prevLogPos = Math.log10(1 + (i - 1) * 9 / numBins) / Math.log10(10);
+                        const prevX = prevLogPos * width;
+                        const cpX = (prevX + x) / 2;
+                        const prevHeight = this.smoothedSpectrum[i - 1] * height * 0.9;
+                        ctx.quadraticCurveTo(prevX, height - prevHeight, cpX, height - (prevHeight + barHeight) / 2);
+                    }
+                }
+                ctx.strokeStyle = 'rgba(147, 51, 234, 0.9)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Draw glow effect
+                ctx.shadowColor = '#8b5cf6';
+                ctx.shadowBlur = 10;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Draw frequency labels
+                this.drawFrequencyLabels(ctx, width, height);
+
+                this.animationFrame = requestAnimationFrame(() => this.renderRealtime());
+            }
+
+            render() {
+                const ctx = this.ctx;
+                const width = this.width;
+                const height = this.height;
+
+                // Clear with dark background
+                ctx.fillStyle = '#0d1117';
+                ctx.fillRect(0, 0, width, height);
+
+                // Draw selection highlight
+                if (this.selectionStart !== null && this.selectionEnd !== null) {
+                    const startX = this.sampleToPixel(Math.min(this.selectionStart, this.selectionEnd));
+                    const endX = this.sampleToPixel(Math.max(this.selectionStart, this.selectionEnd));
+                    ctx.fillStyle = 'rgba(37, 99, 235, 0.2)';
+                    ctx.fillRect(startX, 0, endX - startX, height);
+                }
+
+                if (!this.audioBuffer) {
+                    ctx.fillStyle = '#444';
+                    ctx.font = '12px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Load audio to view spectrum', width / 2, height / 2);
+                    return;
+                }
+
+                // Compute spectrum at playhead position
+                const sampleRate = this.audioBuffer.sampleRate;
+                const channelData = this.audioBuffer.getChannelData(0);
+                const startSample = Math.max(0, this.playheadPosition - this.fftSize / 2);
+
+                // Extract samples for FFT
+                const samples = new Float32Array(this.fftSize);
+                for (let i = 0; i < this.fftSize; i++) {
+                    const idx = startSample + i;
+                    if (idx < channelData.length && idx >= 0) {
+                        // Apply Hann window
+                        const window = 0.5 * (1 - Math.cos(2 * Math.PI * i / this.fftSize));
+                        samples[i] = channelData[idx] * window;
+                    }
+                }
+
+                // Compute FFT
+                const spectrum = this.computeFFT(samples);
+                const nyquist = sampleRate / 2;
+
+                // Bin the spectrum for smoother display
+                const numBins = 128;
+                const binnedData = new Float32Array(numBins);
+
+                for (let i = 0; i < numBins; i++) {
+                    // Map bin to frequency using log scale
+                    const freqRatio = Math.pow(10, i / numBins) / 10;
+                    const binIndex = Math.floor(freqRatio * spectrum.length);
+                    const nextBinIndex = Math.floor(Math.pow(10, (i + 1) / numBins) / 10 * spectrum.length);
+
+                    let sum = 0;
+                    let count = 0;
+                    for (let j = binIndex; j < nextBinIndex && j < spectrum.length; j++) {
+                        sum += spectrum[j];
+                        count++;
+                    }
+                    if (count > 0) {
+                        const magnitude = sum / count;
+                        const db = 20 * Math.log10(magnitude + 1e-10);
+                        binnedData[i] = Math.max(0, Math.min(1, (db + 80) / 70));
+                    }
+                }
+
+                // Create gradient for fill
+                const gradient = ctx.createLinearGradient(0, height, 0, 0);
+                gradient.addColorStop(0, 'rgba(59, 130, 246, 0.05)');
+                gradient.addColorStop(0.3, 'rgba(59, 130, 246, 0.3)');
+                gradient.addColorStop(0.7, 'rgba(99, 102, 241, 0.5)');
+                gradient.addColorStop(1, 'rgba(147, 51, 234, 0.7)');
+
+                // Draw smooth filled curve
+                ctx.beginPath();
+                ctx.moveTo(0, height);
+
+                const points = [];
+                for (let i = 0; i < numBins; i++) {
+                    const logPos = Math.log10(1 + i * 9 / numBins) / Math.log10(10);
+                    const x = logPos * width;
+                    const y = height - binnedData[i] * height * 0.85;
+                    points.push({ x, y });
+                }
+
+                // Draw using bezier curves for extra smoothness
+                ctx.moveTo(0, height);
+                ctx.lineTo(points[0].x, points[0].y);
+
+                for (let i = 1; i < points.length - 1; i++) {
+                    const xc = (points[i].x + points[i + 1].x) / 2;
+                    const yc = (points[i].y + points[i + 1].y) / 2;
+                    ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+                }
+
+                ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+                ctx.lineTo(width, height);
+                ctx.closePath();
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                // Draw the smooth line on top
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+
+                for (let i = 1; i < points.length - 1; i++) {
+                    const xc = (points[i].x + points[i + 1].x) / 2;
+                    const yc = (points[i].y + points[i + 1].y) / 2;
+                    ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+                }
+
+                ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+
+                // Gradient stroke
+                const strokeGradient = ctx.createLinearGradient(0, height, 0, 0);
+                strokeGradient.addColorStop(0, '#3b82f6');
+                strokeGradient.addColorStop(0.5, '#6366f1');
+                strokeGradient.addColorStop(1, '#8b5cf6');
+
+                ctx.strokeStyle = strokeGradient;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Add subtle glow
+                ctx.shadowColor = '#6366f1';
+                ctx.shadowBlur = 8;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Draw frequency labels
+                this.drawFrequencyLabels(ctx, width, height);
+
+                // Draw playhead
+                const playheadX = this.sampleToPixel(this.playheadPosition);
+                if (playheadX >= 0 && playheadX <= width) {
+                    ctx.strokeStyle = '#ef4444';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(playheadX, 0);
+                    ctx.lineTo(playheadX, height);
+                    ctx.stroke();
+                }
+
+                // Draw selection boundaries
+                if (this.selectionStart !== null && this.selectionEnd !== null) {
+                    const startX = this.sampleToPixel(Math.min(this.selectionStart, this.selectionEnd));
+                    const endX = this.sampleToPixel(Math.max(this.selectionStart, this.selectionEnd));
+
+                    ctx.strokeStyle = 'rgba(59, 130, 246, 0.8)';
+                    ctx.lineWidth = 1;
+
+                    if (startX >= 0 && startX <= width) {
+                        ctx.beginPath();
+                        ctx.moveTo(startX, 0);
+                        ctx.lineTo(startX, height);
+                        ctx.stroke();
+                    }
+
+                    if (endX >= 0 && endX <= width) {
+                        ctx.beginPath();
+                        ctx.moveTo(endX, 0);
+                        ctx.lineTo(endX, height);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            drawFrequencyLabels(ctx, width, height) {
+                ctx.fillStyle = '#666';
+                ctx.font = '9px sans-serif';
+                ctx.textAlign = 'left';
+                const sampleRate = this.audioBuffer ? this.audioBuffer.sampleRate : 44100;
+                const nyquist = sampleRate / 2;
+                const freqs = [100, 500, 1000, 2000, 5000, 10000, 20000].filter(f => f < nyquist);
+
+                freqs.forEach(freq => {
+                    const logPos = Math.log10(1 + (freq / nyquist) * 9) / Math.log10(10);
+                    const x = logPos * width;
+                    const label = freq >= 1000 ? `${freq/1000}k` : freq.toString();
+                    ctx.fillText(label, x + 2, height - 3);
+
+                    // Draw subtle grid line
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, height - 12);
+                    ctx.stroke();
+                });
+            }
+
+            computeFFT(samples) {
+                const n = samples.length;
+                const spectrum = new Float32Array(n / 2);
+
+                // Simple DFT - not optimal but works for visualization
+                for (let k = 0; k < n / 2; k++) {
+                    let real = 0, imag = 0;
+                    for (let t = 0; t < n; t++) {
+                        const angle = 2 * Math.PI * k * t / n;
+                        real += samples[t] * Math.cos(angle);
+                        imag -= samples[t] * Math.sin(angle);
+                    }
+                    spectrum[k] = Math.sqrt(real * real + imag * imag) / n;
+                }
+
+                return spectrum;
+            }
+        }
+
+        // ==================== Metering ====================
+        class Metering {
+            constructor() {
+                this.peakValue = document.getElementById('peakValue');
+                this.rmsValue = document.getElementById('rmsValue');
+                this.lufsValue = document.getElementById('lufsValue');
+                this.peakBar = document.getElementById('peakBar');
+                this.rmsBar = document.getElementById('rmsBar');
+                this.lufsBar = document.getElementById('lufsBar');
+
+                this.analyserNode = null;
+                this.audioBuffer = null;
+                this.isRealtime = false;
+                this.animationFrame = null;
+
+                // LUFS integration buffer (short-term = 3 seconds)
+                this.lufsBuffer = [];
+                this.lufsWindowSize = 3000; // ms
+                this.lastLufsTime = 0;
+            }
+
+            setAnalyserNode(node) {
+                this.analyserNode = node;
+            }
+
+            setAudioBuffer(buffer) {
+                this.audioBuffer = buffer;
+            }
+
+            startRealtime() {
+                this.isRealtime = true;
+                this.lufsBuffer = [];
+                this.updateRealtime();
+            }
+
+            stopRealtime() {
+                this.isRealtime = false;
+                if (this.animationFrame) {
+                    cancelAnimationFrame(this.animationFrame);
+                }
+            }
+
+            updateRealtime() {
+                if (!this.isRealtime || !this.analyserNode) return;
+
+                const bufferLength = this.analyserNode.fftSize;
+                const dataArray = new Float32Array(bufferLength);
+                this.analyserNode.getFloatTimeDomainData(dataArray);
+
+                // Calculate Peak
+                let peak = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    const abs = Math.abs(dataArray[i]);
+                    if (abs > peak) peak = abs;
+                }
+                const peakDb = peak > 0 ? 20 * Math.log10(peak) : -Infinity;
+
+                // Calculate RMS
+                let sum = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    sum += dataArray[i] * dataArray[i];
+                }
+                const rms = Math.sqrt(sum / bufferLength);
+                const rmsDb = rms > 0 ? 20 * Math.log10(rms) : -Infinity;
+
+                // Approximate LUFS (simplified - real LUFS needs K-weighting)
+                // Using RMS with accumulation for short-term measurement
+                const now = performance.now();
+                this.lufsBuffer.push({ time: now, rms: rms });
+
+                // Remove old samples
+                while (this.lufsBuffer.length > 0 && now - this.lufsBuffer[0].time > this.lufsWindowSize) {
+                    this.lufsBuffer.shift();
+                }
+
+                // Calculate integrated loudness
+                let lufsSum = 0;
+                for (const sample of this.lufsBuffer) {
+                    lufsSum += sample.rms * sample.rms;
+                }
+                const lufsRms = Math.sqrt(lufsSum / Math.max(1, this.lufsBuffer.length));
+                const lufsDb = lufsRms > 0 ? 20 * Math.log10(lufsRms) - 0.691 : -Infinity; // Approximate offset
+
+                this.updateDisplay(peakDb, rmsDb, lufsDb);
+
+                this.animationFrame = requestAnimationFrame(() => this.updateRealtime());
+            }
+
+            analyzeAtPosition(audioBuffer, startSample, windowSize) {
+                if (!audioBuffer) return;
+
+                const channelData = audioBuffer.getChannelData(0);
+                const endSample = Math.min(startSample + windowSize, channelData.length);
+                const actualStart = Math.max(0, startSample);
+
+                if (actualStart >= channelData.length) {
+                    this.updateDisplay(-Infinity, -Infinity, -Infinity);
+                    return;
+                }
+
+                // Calculate Peak
+                let peak = 0;
+                for (let i = actualStart; i < endSample; i++) {
+                    const abs = Math.abs(channelData[i]);
+                    if (abs > peak) peak = abs;
+                }
+                const peakDb = peak > 0 ? 20 * Math.log10(peak) : -Infinity;
+
+                // Calculate RMS
+                let sum = 0;
+                const count = endSample - actualStart;
+                for (let i = actualStart; i < endSample; i++) {
+                    sum += channelData[i] * channelData[i];
+                }
+                const rms = Math.sqrt(sum / count);
+                const rmsDb = rms > 0 ? 20 * Math.log10(rms) : -Infinity;
+
+                // Approximate LUFS
+                const lufsDb = rmsDb - 0.691;
+
+                this.updateDisplay(peakDb, rmsDb, lufsDb);
+            }
+
+            analyzeSelection(audioBuffer, startSample, endSample) {
+                if (!audioBuffer) return;
+
+                const channelData = audioBuffer.getChannelData(0);
+
+                // Calculate Peak
+                let peak = 0;
+                for (let i = startSample; i < endSample; i++) {
+                    const abs = Math.abs(channelData[i]);
+                    if (abs > peak) peak = abs;
+                }
+                const peakDb = peak > 0 ? 20 * Math.log10(peak) : -Infinity;
+
+                // Calculate RMS
+                let sum = 0;
+                const count = endSample - startSample;
+                for (let i = startSample; i < endSample; i++) {
+                    sum += channelData[i] * channelData[i];
+                }
+                const rms = Math.sqrt(sum / count);
+                const rmsDb = rms > 0 ? 20 * Math.log10(rms) : -Infinity;
+
+                // Approximate LUFS
+                const lufsDb = rmsDb - 0.691;
+
+                this.updateDisplay(peakDb, rmsDb, lufsDb);
+            }
+
+            updateDisplay(peakDb, rmsDb, lufsDb) {
+                // Update Peak
+                this.peakValue.textContent = isFinite(peakDb) ? peakDb.toFixed(1) : '-∞';
+                this.peakValue.className = 'meter-value' + this.getColorClass(peakDb);
+                this.peakBar.style.width = this.dbToPercent(peakDb) + '%';
+
+                // Update RMS
+                this.rmsValue.textContent = isFinite(rmsDb) ? rmsDb.toFixed(1) : '-∞';
+                this.rmsValue.className = 'meter-value' + this.getColorClass(rmsDb);
+                this.rmsBar.style.width = this.dbToPercent(rmsDb) + '%';
+
+                // Update LUFS
+                this.lufsValue.textContent = isFinite(lufsDb) ? lufsDb.toFixed(1) : '-∞';
+                this.lufsValue.className = 'meter-value' + this.getColorClass(lufsDb);
+                this.lufsBar.style.width = this.dbToPercent(lufsDb) + '%';
+            }
+
+            getColorClass(db) {
+                if (db >= -1) return ' danger';
+                if (db >= -6) return ' warning';
+                return '';
+            }
+
+            dbToPercent(db) {
+                if (!isFinite(db)) return 0;
+                // Map -60dB to 0dB to 0-100%
+                return Math.max(0, Math.min(100, (db + 60) / 60 * 100));
+            }
+
+            reset() {
+                this.updateDisplay(-Infinity, -Infinity, -Infinity);
+                this.lufsBuffer = [];
+            }
+        }
+
+        // ==================== File Handler ====================
+        class FileHandler {
+            static async importFile(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(e);
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+
+            static exportWAV(audioBuffer, bitDepth = 16) {
+                const numChannels = audioBuffer.numberOfChannels;
+                const sampleRate = audioBuffer.sampleRate;
+                const length = audioBuffer.length;
+
+                let bytesPerSample;
+                let formatCode;
+                if (bitDepth === 32) {
+                    bytesPerSample = 4;
+                    formatCode = 3; // Float
+                } else {
+                    bytesPerSample = bitDepth / 8;
+                    formatCode = 1; // PCM
+                }
+
+                const dataSize = length * numChannels * bytesPerSample;
+                const buffer = new ArrayBuffer(44 + dataSize);
+                const view = new DataView(buffer);
+
+                // RIFF header
+                this.writeString(view, 0, 'RIFF');
+                view.setUint32(4, 36 + dataSize, true);
+                this.writeString(view, 8, 'WAVE');
+
+                // fmt chunk
+                this.writeString(view, 12, 'fmt ');
+                view.setUint32(16, 16, true); // chunk size
+                view.setUint16(20, formatCode, true);
+                view.setUint16(22, numChannels, true);
+                view.setUint32(24, sampleRate, true);
+                view.setUint32(28, sampleRate * numChannels * bytesPerSample, true);
+                view.setUint16(32, numChannels * bytesPerSample, true);
+                view.setUint16(34, bitDepth, true);
+
+                // data chunk
+                this.writeString(view, 36, 'data');
+                view.setUint32(40, dataSize, true);
+
+                // Write samples
+                const channels = [];
+                for (let c = 0; c < numChannels; c++) {
+                    channels.push(audioBuffer.getChannelData(c));
+                }
+
+                let offset = 44;
+                for (let i = 0; i < length; i++) {
+                    for (let c = 0; c < numChannels; c++) {
+                        const sample = channels[c][i];
+                        if (bitDepth === 32) {
+                            view.setFloat32(offset, sample, true);
+                        } else if (bitDepth === 24) {
+                            const intSample = Math.max(-1, Math.min(1, sample)) * 0x7FFFFF;
+                            view.setUint8(offset, intSample & 0xFF);
+                            view.setUint8(offset + 1, (intSample >> 8) & 0xFF);
+                            view.setUint8(offset + 2, (intSample >> 16) & 0xFF);
+                        } else {
+                            const intSample = Math.max(-1, Math.min(1, sample)) * 0x7FFF;
+                            view.setInt16(offset, intSample, true);
+                        }
+                        offset += bytesPerSample;
+                    }
+                }
+
+                return new Blob([buffer], { type: 'audio/wav' });
+            }
+
+            static exportAIF(audioBuffer, bitDepth = 16) {
+                const numChannels = audioBuffer.numberOfChannels;
+                const sampleRate = audioBuffer.sampleRate;
+                const length = audioBuffer.length;
+                const bytesPerSample = bitDepth / 8;
+
+                const dataSize = length * numChannels * bytesPerSample;
+                const commSize = 18;
+                const ssndSize = 8 + dataSize;
+                const formSize = 4 + 8 + commSize + 8 + ssndSize;
+
+                const buffer = new ArrayBuffer(12 + 8 + commSize + 8 + ssndSize);
+                const view = new DataView(buffer);
+
+                // FORM header
+                this.writeString(view, 0, 'FORM');
+                view.setUint32(4, formSize, false);
+                this.writeString(view, 8, 'AIFF');
+
+                // COMM chunk
+                this.writeString(view, 12, 'COMM');
+                view.setUint32(16, commSize, false);
+                view.setInt16(20, numChannels, false);
+                view.setUint32(22, length, false);
+                view.setInt16(26, bitDepth, false);
+                // Sample rate as 80-bit extended float (simplified)
+                this.writeExtendedFloat(view, 28, sampleRate);
+
+                // SSND chunk
+                const ssndOffset = 12 + 8 + commSize;
+                this.writeString(view, ssndOffset, 'SSND');
+                view.setUint32(ssndOffset + 4, ssndSize, false);
+                view.setUint32(ssndOffset + 8, 0, false); // offset
+                view.setUint32(ssndOffset + 12, 0, false); // block size
+
+                // Write samples
+                const channels = [];
+                for (let c = 0; c < numChannels; c++) {
+                    channels.push(audioBuffer.getChannelData(c));
+                }
+
+                let offset = ssndOffset + 16;
+                for (let i = 0; i < length; i++) {
+                    for (let c = 0; c < numChannels; c++) {
+                        const sample = channels[c][i];
+                        if (bitDepth === 24) {
+                            const intSample = Math.max(-1, Math.min(1, sample)) * 0x7FFFFF;
+                            view.setUint8(offset, (intSample >> 16) & 0xFF);
+                            view.setUint8(offset + 1, (intSample >> 8) & 0xFF);
+                            view.setUint8(offset + 2, intSample & 0xFF);
+                        } else if (bitDepth === 32) {
+                            const intSample = Math.max(-1, Math.min(1, sample)) * 0x7FFFFFFF;
+                            view.setInt32(offset, intSample, false);
+                        } else {
+                            const intSample = Math.max(-1, Math.min(1, sample)) * 0x7FFF;
+                            view.setInt16(offset, intSample, false);
+                        }
+                        offset += bytesPerSample;
+                    }
+                }
+
+                return new Blob([buffer], { type: 'audio/aiff' });
+            }
+
+            static writeString(view, offset, string) {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            }
+
+            static writeExtendedFloat(view, offset, value) {
+                // Simplified 80-bit extended float for sample rate
+                let exponent = 16398;
+                let mantissa = value;
+                while (mantissa < 32768) {
+                    mantissa *= 2;
+                    exponent--;
+                }
+                view.setUint16(offset, exponent, false);
+                view.setUint32(offset + 2, mantissa * 65536, false);
+                view.setUint32(offset + 6, 0, false);
+            }
+        }
+
+        // ==================== Audio Editor ====================
+        class AudioEditor {
+            constructor(audioContext) {
+                this.audioContext = audioContext;
+            }
+
+            createBuffer(length, numChannels, sampleRate) {
+                return this.audioContext.createBuffer(numChannels, length, sampleRate);
+            }
+
+            trim(audioBuffer, startSample, endSample) {
+                const numChannels = audioBuffer.numberOfChannels;
+                const sampleRate = audioBuffer.sampleRate;
+                const newLength = endSample - startSample;
+
+                const newBuffer = this.createBuffer(newLength, numChannels, sampleRate);
+
+                for (let c = 0; c < numChannels; c++) {
+                    const oldData = audioBuffer.getChannelData(c);
+                    const newData = newBuffer.getChannelData(c);
+                    for (let i = 0; i < newLength; i++) {
+                        newData[i] = oldData[startSample + i];
+                    }
+                }
+
+                return newBuffer;
+            }
+
+            deleteSelection(audioBuffer, startSample, endSample) {
+                const numChannels = audioBuffer.numberOfChannels;
+                const sampleRate = audioBuffer.sampleRate;
+                const deleteLength = endSample - startSample;
+                const newLength = audioBuffer.length - deleteLength;
+
+                if (newLength <= 0) return null;
+
+                const newBuffer = this.createBuffer(newLength, numChannels, sampleRate);
+
+                for (let c = 0; c < numChannels; c++) {
+                    const oldData = audioBuffer.getChannelData(c);
+                    const newData = newBuffer.getChannelData(c);
+                    // Copy samples before selection
+                    for (let i = 0; i < startSample; i++) {
+                        newData[i] = oldData[i];
+                    }
+                    // Copy samples after selection
+                    for (let i = endSample; i < audioBuffer.length; i++) {
+                        newData[i - deleteLength] = oldData[i];
+                    }
+                }
+
+                return newBuffer;
+            }
+
+            normalize(audioBuffer, targetDbFS = 0, startSample = 0, endSample = null) {
+                if (endSample === null) endSample = audioBuffer.length;
+                const numChannels = audioBuffer.numberOfChannels;
+
+                // Find peak
+                let peak = 0;
+                for (let c = 0; c < numChannels; c++) {
+                    const data = audioBuffer.getChannelData(c);
+                    for (let i = startSample; i < endSample; i++) {
+                        const abs = Math.abs(data[i]);
+                        if (abs > peak) peak = abs;
+                    }
+                }
+
+                if (peak === 0) return audioBuffer;
+
+                // Calculate gain
+                const targetLinear = Math.pow(10, targetDbFS / 20);
+                const gain = targetLinear / peak;
+
+                // Apply gain
+                for (let c = 0; c < numChannels; c++) {
+                    const data = audioBuffer.getChannelData(c);
+                    for (let i = startSample; i < endSample; i++) {
+                        data[i] *= gain;
+                    }
+                }
+
+                return audioBuffer;
+            }
+
+            fadeIn(audioBuffer, startSample, endSample) {
+                const numChannels = audioBuffer.numberOfChannels;
+                const fadeLength = endSample - startSample;
+
+                for (let c = 0; c < numChannels; c++) {
+                    const data = audioBuffer.getChannelData(c);
+                    for (let i = 0; i < fadeLength; i++) {
+                        const gain = i / fadeLength;
+                        data[startSample + i] *= gain;
+                    }
+                }
+
+                return audioBuffer;
+            }
+
+            fadeOut(audioBuffer, startSample, endSample) {
+                const numChannels = audioBuffer.numberOfChannels;
+                const fadeLength = endSample - startSample;
+
+                for (let c = 0; c < numChannels; c++) {
+                    const data = audioBuffer.getChannelData(c);
+                    for (let i = 0; i < fadeLength; i++) {
+                        const gain = 1 - (i / fadeLength);
+                        data[startSample + i] *= gain;
+                    }
+                }
+
+                return audioBuffer;
+            }
+
+            applyGain(audioBuffer, gainDb, startSample = 0, endSample = null) {
+                if (endSample === null) endSample = audioBuffer.length;
+                const numChannels = audioBuffer.numberOfChannels;
+                const gainLinear = Math.pow(10, gainDb / 20);
+
+                for (let c = 0; c < numChannels; c++) {
+                    const data = audioBuffer.getChannelData(c);
+                    for (let i = startSample; i < endSample; i++) {
+                        data[i] = Math.max(-1, Math.min(1, data[i] * gainLinear));
+                    }
+                }
+
+                return audioBuffer;
+            }
+        }
+
+        // ==================== Utility Functions ====================
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = (seconds % 60).toFixed(2);
+            return `${mins}:${secs.padStart(5, '0')}`;
+        }
+
+        // ==================== Undo Manager ====================
+        class UndoManager {
+            constructor(audioContext, maxStates = 50) {
+                this.audioContext = audioContext;
+                this.undoStack = [];
+                this.redoStack = [];
+                this.maxStates = maxStates;
+            }
+
+            setAudioContext(ctx) {
+                this.audioContext = ctx;
+            }
+
+            // Save current state before making changes
+            saveState(audioBuffer) {
+                if (!audioBuffer) return;
+
+                // Clone the audio buffer
+                const clone = this.cloneBuffer(audioBuffer);
+                this.undoStack.push(clone);
+
+                // Clear redo stack when new action is performed
+                this.redoStack = [];
+
+                // Limit stack size
+                if (this.undoStack.length > this.maxStates) {
+                    this.undoStack.shift();
+                }
+            }
+
+            canUndo() {
+                return this.undoStack.length > 0;
+            }
+
+            canRedo() {
+                return this.redoStack.length > 0;
+            }
+
+            undo(currentBuffer) {
+                if (!this.canUndo()) return null;
+
+                // Save current state to redo stack
+                if (currentBuffer) {
+                    this.redoStack.push(this.cloneBuffer(currentBuffer));
+                }
+
+                // Pop and return the previous state
+                return this.undoStack.pop();
+            }
+
+            redo(currentBuffer) {
+                if (!this.canRedo()) return null;
+
+                // Save current state to undo stack
+                if (currentBuffer) {
+                    this.undoStack.push(this.cloneBuffer(currentBuffer));
+                }
+
+                // Pop and return the redo state
+                return this.redoStack.pop();
+            }
+
+            cloneBuffer(audioBuffer) {
+                const clone = this.audioContext.createBuffer(
+                    audioBuffer.numberOfChannels,
+                    audioBuffer.length,
+                    audioBuffer.sampleRate
+                );
+
+                for (let c = 0; c < audioBuffer.numberOfChannels; c++) {
+                    const sourceData = audioBuffer.getChannelData(c);
+                    const destData = clone.getChannelData(c);
+                    destData.set(sourceData);
+                }
+
+                return clone;
+            }
+
+            clear() {
+                this.undoStack = [];
+                this.redoStack = [];
+            }
+        }
+
+        // ==================== Main Application ====================
+        class App {
+            constructor() {
+                this.audioEngine = new AudioEngine();
+                this.waveformRenderer = new WaveformRenderer(document.getElementById('waveformCanvas'));
+                this.undoManager = new UndoManager(null);
+                this.spectrogramRenderer = new SpectrogramRenderer(document.getElementById('spectrogramCanvas'));
+                this.metering = new Metering();
+                this.audioEditor = null;
+                this.fileName = null;
+
+                this.setupEventListeners();
+                this.updateUI();
+            }
+
+            setupEventListeners() {
+                // File operations
+                document.getElementById('importBtn').addEventListener('click', () => {
+                    document.getElementById('fileInput').click();
+                });
+                document.getElementById('fileInput').addEventListener('change', (e) => {
+                    if (e.target.files[0]) this.importFile(e.target.files[0]);
+                });
+                document.getElementById('exportBtn').addEventListener('click', () => this.showExportModal());
+
+                // Transport
+                document.getElementById('playBtn').addEventListener('click', () => this.play());
+                document.getElementById('pauseBtn').addEventListener('click', () => this.pause());
+                document.getElementById('stopBtn').addEventListener('click', () => this.stop());
+
+                // Zoom
+                document.getElementById('zoomInBtn').addEventListener('click', () => this.waveformRenderer.zoomIn());
+                document.getElementById('zoomOutBtn').addEventListener('click', () => this.waveformRenderer.zoomOut());
+                document.getElementById('zoomFitBtn').addEventListener('click', () => this.waveformRenderer.zoomFit());
+
+                // Edit operations
+                document.getElementById('undoBtn').addEventListener('click', () => this.undo());
+                document.getElementById('redoBtn').addEventListener('click', () => this.redo());
+                document.getElementById('trimBtn').addEventListener('click', () => this.trim());
+                document.getElementById('normalizeBtn').addEventListener('click', () => this.showNormalizeModal());
+                document.getElementById('fadeInBtn').addEventListener('click', () => this.fadeIn());
+                document.getElementById('fadeOutBtn').addEventListener('click', () => this.fadeOut());
+                document.getElementById('gainBtn').addEventListener('click', () => this.showGainModal());
+
+                // Export modal
+                document.getElementById('exportCancelBtn').addEventListener('click', () => this.hideExportModal());
+                document.getElementById('exportConfirmBtn').addEventListener('click', () => this.exportFile());
+
+                // Normalize modal
+                document.getElementById('normalizeCancelBtn').addEventListener('click', () => this.hideNormalizeModal());
+                document.getElementById('normalizeConfirmBtn').addEventListener('click', () => this.normalize());
+
+                // Gain modal
+                document.getElementById('gainCancelBtn').addEventListener('click', () => this.hideGainModal());
+                document.getElementById('gainConfirmBtn').addEventListener('click', () => this.applyGain());
+
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => this.handleKeyboard(e));
+
+                // FFT size selector
+                document.getElementById('fftSize').addEventListener('change', (e) => {
+                    const size = parseInt(e.target.value);
+                    this.audioEngine.setFFTSize(size);
+                    this.spectrogramRenderer.setFFTSize(size);
+                    this.spectrogramRenderer.render();
+                });
+
+                // Waveform callbacks
+                this.waveformRenderer.onPlayheadChange = (sample) => {
+                    this.spectrogramRenderer.setPlayheadPosition(sample);
+                    if (this.audioEngine.audioBuffer) {
+                        const time = sample / this.audioEngine.audioBuffer.sampleRate;
+                        this.updatePositionInfo(time);
+                    }
+                    this.updateAnalysis();
+                };
+                this.waveformRenderer.onSelectionUpdate = (start, end) => {
+                    this.spectrogramRenderer.setSelection(start, end);
+                };
+                this.waveformRenderer.onSelectionChange = () => {
+                    this.updateUI();
+                    this.updateAnalysis();
+                };
+                this.waveformRenderer.onZoomChange = () => {
+                    this.updateZoomInfo();
+                    this.spectrogramRenderer.setSamplesPerPixel(this.waveformRenderer.samplesPerPixel);
+                    this.spectrogramRenderer.setScrollOffset(this.waveformRenderer.scrollOffset);
+                };
+                this.waveformRenderer.onScrollChange = () => {
+                    this.spectrogramRenderer.setScrollOffset(this.waveformRenderer.scrollOffset);
+                };
+
+                // Playback callbacks
+                this.audioEngine.onPositionUpdate = (time) => {
+                    this.waveformRenderer.setPlayheadPosition(time);
+                    this.updatePositionInfo(time);
+                    if (this.audioEngine.audioBuffer) {
+                        const sample = Math.floor(time * this.audioEngine.audioBuffer.sampleRate);
+                        this.spectrogramRenderer.setPlayheadPosition(sample);
+                    }
+                };
+                this.audioEngine.onPlaybackEnd = () => {
+                    this.updateUI();
+                    this.stopRealtimeAnalysis();
+                    this.updateAnalysis();
+                };
+            }
+
+            handleKeyboard(e) {
+                if (e.target.tagName === 'INPUT') return;
+
+                // Handle Cmd/Ctrl + key combinations
+                if (e.metaKey || e.ctrlKey) {
+                    switch (e.key) {
+                        case 'a':
+                            e.preventDefault();
+                            this.waveformRenderer.selectAll();
+                            return;
+                        case 'z':
+                            e.preventDefault();
+                            if (e.shiftKey) {
+                                this.redo();
+                            } else {
+                                this.undo();
+                            }
+                            return;
+                        case 'y':
+                            e.preventDefault();
+                            this.redo();
+                            return;
+                    }
+                }
+
+                switch (e.key) {
+                    case ' ':
+                        e.preventDefault();
+                        if (this.audioEngine.isPlaying) {
+                            this.pause();
+                        } else {
+                            this.play();
+                        }
+                        break;
+                    case '+':
+                    case '=':
+                        this.waveformRenderer.zoomIn();
+                        break;
+                    case '-':
+                        this.waveformRenderer.zoomOut();
+                        break;
+                    case 'Delete':
+                    case 'Backspace':
+                        e.preventDefault();
+                        this.deleteSelection();
+                        break;
+                }
+            }
+
+            async importFile(file) {
+                try {
+                    this.fileName = file.name;
+                    const arrayBuffer = await FileHandler.importFile(file);
+                    const audioBuffer = await this.audioEngine.loadAudio(arrayBuffer);
+
+                    if (!this.audioEditor) {
+                        this.audioEditor = new AudioEditor(this.audioEngine.audioContext);
+                    }
+
+                    // Set up undo manager
+                    this.undoManager.setAudioContext(this.audioEngine.audioContext);
+                    this.undoManager.clear();
+
+                    // Set up waveform
+                    this.waveformRenderer.setAudioBuffer(audioBuffer);
+
+                    // Set up spectrogram
+                    this.spectrogramRenderer.setAudioBuffer(audioBuffer);
+                    this.spectrogramRenderer.setAnalyserNode(this.audioEngine.getAnalyserNode());
+                    this.spectrogramRenderer.setSamplesPerPixel(this.waveformRenderer.samplesPerPixel);
+
+                    // Set up metering
+                    this.metering.setAudioBuffer(audioBuffer);
+                    this.metering.setAnalyserNode(this.audioEngine.getAnalyserNode());
+
+                    this.updateUI();
+                    this.updateFileInfo();
+                    this.updateZoomInfo();
+                    this.updateAnalysis();
+                } catch (err) {
+                    alert('Error loading audio file: ' + err.message);
+                }
+            }
+
+            play() {
+                if (!this.audioEngine.audioBuffer) return;
+
+                const selection = this.waveformRenderer.getSelection();
+                if (selection) {
+                    // Always play only the selection
+                    const startTime = selection.start / this.audioEngine.audioBuffer.sampleRate;
+                    const endTime = selection.end / this.audioEngine.audioBuffer.sampleRate;
+                    this.audioEngine.playSelection(startTime, endTime);
+                } else if (this.audioEngine.isPaused) {
+                    // Resume from pause point
+                    this.audioEngine.resume();
+                } else {
+                    // Play from playhead position, or from start if at/near end
+                    let startSample = this.waveformRenderer.playheadPosition;
+                    const totalSamples = this.audioEngine.audioBuffer.length;
+
+                    // If playhead is within 1% of the end, start from beginning
+                    if (startSample >= totalSamples * 0.99) {
+                        startSample = 0;
+                        this.waveformRenderer.playheadPosition = 0;
+                        this.waveformRenderer.render();
+                    }
+
+                    const startTime = startSample / this.audioEngine.audioBuffer.sampleRate;
+                    this.audioEngine.play(startTime);
+                }
+                this.startRealtimeAnalysis();
+                this.updateUI();
+            }
+
+            pause() {
+                this.audioEngine.pause();
+                this.stopRealtimeAnalysis();
+                this.updateUI();
+            }
+
+            stop() {
+                this.audioEngine.stop();
+                this.stopRealtimeAnalysis();
+                this.waveformRenderer.setPlayheadPosition(0);
+                this.spectrogramRenderer.setPlayheadPosition(0);
+                this.updatePositionInfo(0);
+                this.updateUI();
+                this.updateAnalysis();
+            }
+
+            startRealtimeAnalysis() {
+                this.spectrogramRenderer.startRealtime();
+                this.metering.startRealtime();
+            }
+
+            stopRealtimeAnalysis() {
+                this.spectrogramRenderer.stopRealtime();
+                this.metering.stopRealtime();
+            }
+
+            updateAnalysis() {
+                if (!this.audioEngine.audioBuffer) return;
+
+                const selection = this.waveformRenderer.getSelection();
+                if (selection) {
+                    // Analyze selection
+                    this.metering.analyzeSelection(
+                        this.audioEngine.audioBuffer,
+                        selection.start,
+                        selection.end
+                    );
+                } else {
+                    // Analyze at playhead position
+                    const sampleRate = this.audioEngine.audioBuffer.sampleRate;
+                    const windowSize = Math.floor(sampleRate * 0.1); // 100ms window
+                    this.metering.analyzeAtPosition(
+                        this.audioEngine.audioBuffer,
+                        this.waveformRenderer.playheadPosition,
+                        windowSize
+                    );
+                }
+            }
+
+            undo() {
+                if (!this.undoManager.canUndo()) return;
+
+                this.stop();
+                const previousBuffer = this.undoManager.undo(this.audioEngine.audioBuffer);
+                if (previousBuffer) {
+                    this.applyBuffer(previousBuffer);
+                }
+            }
+
+            redo() {
+                if (!this.undoManager.canRedo()) return;
+
+                this.stop();
+                const nextBuffer = this.undoManager.redo(this.audioEngine.audioBuffer);
+                if (nextBuffer) {
+                    this.applyBuffer(nextBuffer);
+                }
+            }
+
+            applyBuffer(buffer) {
+                this.audioEngine.setBuffer(buffer);
+                this.waveformRenderer.setAudioBuffer(buffer);
+                this.spectrogramRenderer.setAudioBuffer(buffer);
+                this.metering.setAudioBuffer(buffer);
+                this.updateFileInfo();
+                this.updateUI();
+                this.updateAnalysis();
+            }
+
+            saveStateForUndo() {
+                this.undoManager.saveState(this.audioEngine.audioBuffer);
+            }
+
+            trim() {
+                const selection = this.waveformRenderer.getSelection();
+                if (!selection) return;
+
+                this.stop();
+                this.saveStateForUndo();
+                const newBuffer = this.audioEditor.trim(
+                    this.audioEngine.audioBuffer,
+                    selection.start,
+                    selection.end
+                );
+                this.applyBuffer(newBuffer);
+            }
+
+            deleteSelection() {
+                const selection = this.waveformRenderer.getSelection();
+                if (!selection || !this.audioEditor) return;
+
+                this.stop();
+                this.saveStateForUndo();
+                const newBuffer = this.audioEditor.deleteSelection(
+                    this.audioEngine.audioBuffer,
+                    selection.start,
+                    selection.end
+                );
+
+                if (newBuffer) {
+                    this.applyBuffer(newBuffer);
+                }
+            }
+
+            showNormalizeModal() {
+                document.getElementById('normalizeModal').classList.add('visible');
+            }
+
+            hideNormalizeModal() {
+                document.getElementById('normalizeModal').classList.remove('visible');
+            }
+
+            normalize() {
+                const level = parseFloat(document.getElementById('normalizeLevel').value);
+                const selection = this.waveformRenderer.getSelection();
+
+                this.stop();
+                this.saveStateForUndo();
+                if (selection) {
+                    this.audioEditor.normalize(this.audioEngine.audioBuffer, level, selection.start, selection.end);
+                } else {
+                    this.audioEditor.normalize(this.audioEngine.audioBuffer, level);
+                }
+                this.waveformRenderer.calculatePeaks();
+                this.waveformRenderer.render();
+                this.spectrogramRenderer.render();
+                this.updateUI();
+                this.updateAnalysis();
+                this.hideNormalizeModal();
+            }
+
+            fadeIn() {
+                const selection = this.waveformRenderer.getSelection();
+                if (!selection) return;
+
+                this.stop();
+                this.saveStateForUndo();
+                this.audioEditor.fadeIn(this.audioEngine.audioBuffer, selection.start, selection.end);
+                this.waveformRenderer.calculatePeaks();
+                this.waveformRenderer.render();
+                this.spectrogramRenderer.render();
+                this.updateUI();
+                this.updateAnalysis();
+            }
+
+            fadeOut() {
+                const selection = this.waveformRenderer.getSelection();
+                if (!selection) return;
+
+                this.stop();
+                this.saveStateForUndo();
+                this.audioEditor.fadeOut(this.audioEngine.audioBuffer, selection.start, selection.end);
+                this.waveformRenderer.calculatePeaks();
+                this.waveformRenderer.render();
+                this.spectrogramRenderer.render();
+                this.updateUI();
+                this.updateAnalysis();
+            }
+
+            showGainModal() {
+                document.getElementById('gainModal').classList.add('visible');
+            }
+
+            hideGainModal() {
+                document.getElementById('gainModal').classList.remove('visible');
+            }
+
+            applyGain() {
+                const gainDb = parseFloat(document.getElementById('gainAmount').value);
+                const selection = this.waveformRenderer.getSelection();
+
+                this.stop();
+                this.saveStateForUndo();
+                if (selection) {
+                    this.audioEditor.applyGain(this.audioEngine.audioBuffer, gainDb, selection.start, selection.end);
+                } else {
+                    this.audioEditor.applyGain(this.audioEngine.audioBuffer, gainDb);
+                }
+                this.waveformRenderer.calculatePeaks();
+                this.waveformRenderer.render();
+                this.spectrogramRenderer.render();
+                this.updateUI();
+                this.updateAnalysis();
+                this.hideGainModal();
+            }
+
+            showExportModal() {
+                document.getElementById('exportModal').classList.add('visible');
+            }
+
+            hideExportModal() {
+                document.getElementById('exportModal').classList.remove('visible');
+            }
+
+            exportFile() {
+                const format = document.getElementById('exportFormat').value;
+                const bitDepth = parseInt(document.getElementById('exportBitDepth').value);
+
+                let blob;
+                let extension;
+
+                if (format === 'wav') {
+                    blob = FileHandler.exportWAV(this.audioEngine.audioBuffer, bitDepth);
+                    extension = '.wav';
+                } else {
+                    // AIF doesn't support 32-bit float
+                    const aifBitDepth = bitDepth === 32 ? 24 : bitDepth;
+                    blob = FileHandler.exportAIF(this.audioEngine.audioBuffer, aifBitDepth);
+                    extension = '.aif';
+                }
+
+                const baseName = this.fileName ? this.fileName.replace(/\.[^/.]+$/, '') : 'audio';
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = baseName + extension;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                this.hideExportModal();
+            }
+
+            updateUI() {
+                const hasAudio = !!this.audioEngine.audioBuffer;
+                const hasSelection = this.waveformRenderer.hasSelection();
+                const isPlaying = this.audioEngine.isPlaying;
+
+                // File buttons
+                document.getElementById('exportBtn').disabled = !hasAudio;
+
+                // Transport
+                document.getElementById('playBtn').disabled = !hasAudio;
+                document.getElementById('pauseBtn').disabled = !isPlaying;
+                document.getElementById('stopBtn').disabled = !hasAudio;
+                document.getElementById('playBtn').classList.toggle('playing', isPlaying);
+
+                // Zoom
+                document.getElementById('zoomInBtn').disabled = !hasAudio;
+                document.getElementById('zoomOutBtn').disabled = !hasAudio;
+                document.getElementById('zoomFitBtn').disabled = !hasAudio;
+
+                // Edit (require selection for most)
+                document.getElementById('undoBtn').disabled = !this.undoManager.canUndo();
+                document.getElementById('redoBtn').disabled = !this.undoManager.canRedo();
+                document.getElementById('trimBtn').disabled = !hasSelection;
+                document.getElementById('normalizeBtn').disabled = !hasAudio;
+                document.getElementById('fadeInBtn').disabled = !hasSelection;
+                document.getElementById('fadeOutBtn').disabled = !hasSelection;
+                document.getElementById('gainBtn').disabled = !hasAudio;
+            }
+
+            updateFileInfo() {
+                const buffer = this.audioEngine.audioBuffer;
+                if (!buffer) {
+                    document.getElementById('fileInfo').textContent = 'No file loaded';
+                    return;
+                }
+
+                const duration = formatTime(buffer.duration);
+                const sampleRate = (buffer.sampleRate / 1000).toFixed(1) + ' kHz';
+                const channels = buffer.numberOfChannels === 1 ? 'Mono' : 'Stereo';
+
+                document.getElementById('fileInfo').textContent =
+                    `${this.fileName} | ${duration} | ${sampleRate} | ${channels}`;
+            }
+
+            updatePositionInfo(time) {
+                document.getElementById('positionInfo').textContent = formatTime(time);
+            }
+
+            updateZoomInfo() {
+                const spp = this.waveformRenderer.samplesPerPixel;
+                let zoomText;
+                if (spp >= 1000) {
+                    zoomText = (spp / 1000).toFixed(1) + 'k samples/px';
+                } else {
+                    zoomText = spp.toFixed(0) + ' samples/px';
+                }
+                document.getElementById('zoomInfo').textContent = zoomText;
+            }
+        }
+
+        // Start the application
+        const app = new App();
+    </script>
+</body>
+</html>

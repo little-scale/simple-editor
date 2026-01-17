@@ -585,10 +585,10 @@
             <span class="toolbar-label">Edit</span>
             <button id="undoBtn" disabled title="Undo (⌘Z)">Undo</button>
             <button id="redoBtn" disabled title="Redo (⌘⇧Z)">Redo</button>
-            <button id="trimBtn" disabled title="Trim to selection">Trim</button>
-            <button id="normalizeBtn" disabled title="Normalize">Normalize</button>
-            <button id="fadeInBtn" disabled title="Fade In">Fade In</button>
-            <button id="fadeOutBtn" disabled title="Fade Out">Fade Out</button>
+            <button id="trimBtn" disabled title="Trim to selection (⌘T)">Trim</button>
+            <button id="normalizeBtn" disabled title="Normalize (⌘⇧N)">Normalize</button>
+            <button id="fadeInBtn" disabled title="Fade In (⌘F)">Fade In</button>
+            <button id="fadeOutBtn" disabled title="Fade Out (⌘⇧F)">Fade Out</button>
             <button id="gainBtn" disabled title="Apply Gain">Gain</button>
             <button id="reverseBtn" disabled title="Reverse">Reverse</button>
         </div>
@@ -2440,6 +2440,35 @@
                             e.preventDefault();
                             this.redo();
                             return;
+                        case 't':
+                            e.preventDefault();
+                            if (this.waveformRenderer.hasSelection()) {
+                                this.trim();
+                            }
+                            return;
+                        case 'f':
+                            e.preventDefault();
+                            if (e.shiftKey) {
+                                // Cmd/Ctrl + Shift + F = Fade Out
+                                if (this.waveformRenderer.hasSelection()) {
+                                    this.fadeOut();
+                                }
+                            } else {
+                                // Cmd/Ctrl + F = Fade In
+                                if (this.waveformRenderer.hasSelection()) {
+                                    this.fadeIn();
+                                }
+                            }
+                            return;
+                        case 'n':
+                            e.preventDefault();
+                            if (e.shiftKey) {
+                                // Cmd/Ctrl + Shift + N = Normalize
+                                if (this.audioEngine.audioBuffer) {
+                                    this.showNormalizeModal();
+                                }
+                            }
+                            return;
                     }
                 }
 
@@ -2458,6 +2487,18 @@
                         break;
                     case '-':
                         this.waveformRenderer.zoomOut();
+                        break;
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        if (this.audioEngine.audioBuffer) {
+                            this.movePlayhead(-1); // Move back 1ms
+                        }
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        if (this.audioEngine.audioBuffer) {
+                            this.movePlayhead(1); // Move forward 1ms
+                        }
                         break;
                     case 'Delete':
                     case 'Backspace':
@@ -2691,6 +2732,37 @@
                 const isLooping = !this.audioEngine.isLooping();
                 this.audioEngine.setLooping(isLooping);
                 document.getElementById('loopBtn').classList.toggle('loop-active', isLooping);
+            }
+
+            movePlayhead(milliseconds) {
+                if (!this.audioEngine.audioBuffer) return;
+
+                const sampleRate = this.audioEngine.audioBuffer.sampleRate;
+                const totalSamples = this.audioEngine.audioBuffer.length;
+
+                // Convert milliseconds to samples (1ms = sampleRate/1000 samples)
+                const sampleIncrement = Math.round((sampleRate / 1000) * milliseconds);
+
+                // Get current playhead position in samples
+                let currentSample = this.waveformRenderer.playheadPosition;
+
+                // Calculate new position
+                let newSample = currentSample + sampleIncrement;
+
+                // Clamp to valid range
+                newSample = Math.max(0, Math.min(totalSamples - 1, newSample));
+
+                // Update playhead position
+                this.waveformRenderer.playheadPosition = newSample;
+                this.waveformRenderer.render();
+
+                // Update spectrum at new position
+                this.spectrogramRenderer.setPlayheadPosition(newSample);
+                this.spectrogramRenderer.render();
+
+                // Update position info
+                const time = newSample / sampleRate;
+                this.updatePositionInfo(time);
             }
 
             startRealtimeAnalysis() {

@@ -65,10 +65,15 @@ A browser-based audio editor for WAV and AIF files. No installation required - j
 | Space | Play/Pause |
 | L | Toggle loop |
 | R | Reverse |
+| ← / → | Move playhead left/right by 1ms |
 | + / = | Zoom in |
 | - | Zoom out |
 | Delete / Backspace | Delete selection |
 | Cmd/Ctrl + A | Select all |
+| Cmd/Ctrl + T | Trim to selection |
+| Cmd/Ctrl + F | Fade in |
+| Cmd/Ctrl + Shift + F | Fade out |
+| Cmd/Ctrl + Shift + N | Normalize |
 | Cmd/Ctrl + Z | Undo |
 | Cmd/Ctrl + Shift + Z | Redo |
 | Cmd/Ctrl + Y | Redo (alternative) |
@@ -126,11 +131,15 @@ Tested in Chrome, Firefox, Safari, and Edge.
 6. Click **Export** to save your edited audio
 
 ### Tips
-- Press **L** to toggle loop mode for selected regions
-- Press **R** to reverse audio quickly
-- Use **Space** to play/pause
-- Check the spectrum analyzer to view frequency content
+- Use keyboard shortcuts for faster editing workflow:
+  - **Cmd/Ctrl+T** to trim, **Cmd/Ctrl+F** to fade in, **Cmd/Ctrl+Shift+F** to fade out
+  - **Cmd/Ctrl+Shift+N** to normalize
+  - **L** to toggle loop mode, **R** to reverse
+  - **Space** to play/pause
+- Navigate precisely with **arrow keys** (←/→) to move the playhead in 1ms increments
+- Check the spectrum analyzer to view frequency content (FFT control in bottom-right)
 - File statistics (RMS Peak, True Peak, LUFS) update automatically when files are loaded or edited
+- All destructive edits can be undone with **Cmd/Ctrl+Z**
 
 ## License
 

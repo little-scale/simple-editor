@@ -1,6 +1,7 @@
 # Simple Audio Editor
 
 A browser-based audio editor for WAV and AIF files. No installation required - just open `index.html` in your browser.
+Try it here: https://little-scale.github.io/simple-editor/ 
 
 **Key Features:**
 - 🎵 Multi-file workflow with drag & drop support
